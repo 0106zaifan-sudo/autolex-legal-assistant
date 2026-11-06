@@ -4,6 +4,8 @@ import io
 import zipfile
 
 SOURCE_FILES = (
+    'sample_debug.py', 'sim_b_debug.py', 'tools/replay_sim_b.py', 'tests/test_sample_debug.py',
+    'docs/SIM_B_DEBUG.md', 'docs/sim_b_manual_reproduction.json', 'docs/sample_debug_offline_tests.txt',
     'ai_providers.py', 'tests/test_providers.py', 'tests/test_fact_classification.py', 'docs/MULTI_PROVIDER.md',
     'docs/multi_provider_offline_tests.txt',
     'docs/FACT_CLASSIFICATION_PATCH.md', 'docs/fact_classification_offline_tests.txt',

@@ -15,6 +15,7 @@ from security import SecurityError
 from document_parser import PARSER_VERSION
 from model_runtime import invoke, ModelRuntimeError
 from ai_providers import adapt_request, billing_record
+from sample_debug import capture_rejected_output
 
 SCHEMA_VERSION = '2.0'
 PROMPT_VERSION = 'evidence-binding-v2'
@@ -31,6 +32,10 @@ PROMPT = '''你是法律资料整理助手，仅能使用输入的 sources，不
 每一项必须引用至少一个 source_id 和该块中的完整、连续、唯一的原文 quote。
 所有项目的 text 必须是某条引文中的连续原文摘录，不得改写或补写。概括推理只放 reasoning。
 kind 必须区分事实、主张、推断。事实表示资料记载而非认定真实；当事人的陈述/主张不能当成事实。
+facts是列表名，不代表已确认事实；其中当事人陈述仍必须kind=主张，不得改为事实。
+资料目录的“是否完整尚未核实”不是完整性已确认，也不是缺失已确认，不可标为事实。
+同一句同时含客观目录记载和核实限定时，不截取半句来规避限定；保留完整引文到pending_evidence，kind=推断，只问需要核实的问题。
+pending_evidence的text仍逐字摘录原文，reasoning采用“待核实推断：……是否……？”；没有单方说话人的核实事项不强行归类为当事人主张。
 事实摘录不得截掉说话人、主张前缀或核实限定；混合材料应引用独立完整原文句，无法区分时保守标为主张或待核实推断。
 推断 reasoning 必须用“待核实推断：”开头，非推断 reasoning 为空。
 issues 和 pending_evidence 全部标为推断，只提出待核实问题，不得断言责任归属或证据存在/缺失。
@@ -362,7 +367,7 @@ RUNTIME_MESSAGES={
 }
 
 
-def analyze_record(record, settings, store, principal, consent=False, client_factory=None, *, coverage_acknowledged=False):
+def analyze_record(record, settings, store, principal, consent=False, client_factory=None, *, coverage_acknowledged=False, debug_rejected_samples=False):
     disabled=settings.ai_disabled_reason(principal)
     if disabled:raise AIError(disabled,code='disabled')
     if not consent:raise AIError(f'请先确认有权将当前资料正文发送至 {settings.provider_spec.label} API。',code='consent_required')
@@ -379,6 +384,7 @@ def analyze_record(record, settings, store, principal, consent=False, client_fac
     started=time.monotonic()
     receipt={'run_id':uuid.uuid4().hex,'execution_mode':'live_sdk' if client_factory is None else 'injected_test_client',
              'provider':settings.provider,'base_url':settings.provider_spec.base_url,'protocol':'responses',
+             'prompt_sha256':hashlib.sha256(PROMPT.encode()).hexdigest(),
              'billing':billing_record(None),
              'requested_model':settings.model,'provider_model':None,'provider_response_id':None,
              'sdk_version':version('openai'),'started_at':datetime.now(ZoneInfo('Asia/Shanghai')).isoformat(timespec='seconds'),
@@ -410,6 +416,11 @@ def analyze_record(record, settings, store, principal, consent=False, client_fac
             receipt.update(validation_status='failed',validation_error_kind='evidence_binding',validation_detail=str(exc))
             if exc.diagnostic is not None:
                 receipt['validation_diagnostic']=exc.diagnostic
+            if debug_rejected_samples is True:
+                receipt['debug_capture']=capture_rejected_output(
+                    record,response.get('output_text',''),enabled=True,
+                    execution_mode=receipt['execution_mode'],
+                    forbidden_values=(settings.api_key,settings.password_hash))
             raise AIError('AI 引证或时间绑定校验失败，未保存分析；调用元数据仍已记录。',code='output_validation_failed') from None
         receipt['validation_status']='passed'
         receipt['duration_ms']=round((time.monotonic()-started)*1000)

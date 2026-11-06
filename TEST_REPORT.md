@@ -1,3 +1,19 @@
+# 最新：SIM_B失败定位与可选私有调试
+
+2026-11-06（北京时间）；`feature/multi-provider-deepseek`，基线`5a18ec3`。
+
+完整离线回归：**205项通过，16.359秒**。原有176项测试文件未改，新增29项固定样本调试/安全/回放测试。Python 3.12，工作区已有依赖通过`PYTHONPATH=/workspace/work/phase2_deps:/workspace/work/python_deps`加载，依赖版本不变。完整日志见[本轮离线日志](docs/sample_debug_offline_tests.txt)。
+
+[SIM_B定位与调试说明](docs/SIM_B_DEBUG.md)及[9项人工离线对照](docs/sim_b_manual_reproduction.json)明确区分整句误分类、客观半句保守拒绝、待核实问题、单方主张及独立客观记录。可用`python tools/replay_sim_b.py`完全离线重现，不读取Secrets或访问模型。
+
+仅完善Prompt并新增默认关闭、固定样本限制的私有原始结构化输出捕获/回放；分类validator、CLAIM_MARKERS、Schema 2.0、哈希/source、时间绑定、访问控制及限流实现与基线相同。原SIM材料和manifest/gold未改。测试覆盖私有权限、符号链接/路径逃逸、仿冒样本、原文范围、凭据样式及JSON转义、大小/数量限制、失败不导入案件、默认不保存、Schema失败/有效分析不保存、回放不输出原文。
+
+本轮真实模型调用0次，不读取/修改/重新配置实际Secrets，不部署、不执行付费验收。用户提供的既有DeepSeek失败不被离线结果替代；仍缺当次text/quote，不能宣称已证明模型具体错误或真实验收通过。
+
+以下保留历史记录。
+
+---
+
 # 最新：事实/主张分类范围及安全诊断补丁
 
 2026-11-06（北京时间）；`feature/multi-provider-deepseek`，基线`62782c4`。

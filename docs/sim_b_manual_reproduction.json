@@ -1,0 +1,205 @@
+{
+  "execution_mode": "manual_offline",
+  "fixture_id": "SIM_B",
+  "actual_live_attempts": 0,
+  "accuracy": null,
+  "prompt_sha256": "89b36b653a129cd977111834c7a8e1671da8532e59f1dfd4738ab69011fac6ea",
+  "cases": [
+    {
+      "case_id": "s006_as_fact_index_5",
+      "section": "facts",
+      "item_index": 5,
+      "source_id": "S006",
+      "quote": "模拟资料目录：仅列出检查摘要，原始车载日志是否完整尚未核实。",
+      "text": "模拟资料目录：仅列出检查摘要，原始车载日志是否完整尚未核实。",
+      "kind": "事实",
+      "reasoning": "",
+      "interpretation": "整句的未核实完整性被kind=事实承载，应拒绝；Schema没有“已确认事实”枚举。",
+      "schema_valid": true,
+      "binding_valid": false,
+      "validation_error_kind": "evidence_binding",
+      "validation_diagnostic": {
+        "section": "facts",
+        "item_index": 5,
+        "item_index_base": 0,
+        "source_id": "S006",
+        "matched_markers": [
+          "尚未核实"
+        ],
+        "rule": "fact_from_claim_or_unverified_context",
+        "scope": "original_unit_prefix_sentence_and_continuation",
+        "unit_index": 5,
+        "scope_start": 0,
+        "scope_end": 30
+      }
+    },
+    {
+      "case_id": "directory_excerpt_full_quote",
+      "section": "facts",
+      "item_index": 0,
+      "source_id": "S006",
+      "quote": "模拟资料目录：仅列出检查摘要，原始车载日志是否完整尚未核实。",
+      "text": "仅列出检查摘要",
+      "kind": "事实",
+      "reasoning": "",
+      "interpretation": "客观目录半句候选，quote仍保留完整限定；当前同句保守规则拒绝，不等同模型认定日志完整。",
+      "schema_valid": true,
+      "binding_valid": false,
+      "validation_error_kind": "evidence_binding",
+      "validation_diagnostic": {
+        "section": "facts",
+        "item_index": 0,
+        "item_index_base": 0,
+        "source_id": "S006",
+        "matched_markers": [
+          "尚未核实"
+        ],
+        "rule": "fact_from_claim_or_unverified_context",
+        "scope": "original_unit_prefix_sentence_and_continuation",
+        "unit_index": 5,
+        "scope_start": 0,
+        "scope_end": 30
+      }
+    },
+    {
+      "case_id": "directory_excerpt_short_quote",
+      "section": "facts",
+      "item_index": 0,
+      "source_id": "S006",
+      "quote": "仅列出检查摘要",
+      "text": "仅列出检查摘要",
+      "kind": "事实",
+      "reasoning": "",
+      "interpretation": "只引用客观半句仍被原文同句限定约束；不能通过缩短quote规避。",
+      "schema_valid": true,
+      "binding_valid": false,
+      "validation_error_kind": "evidence_binding",
+      "validation_diagnostic": {
+        "section": "facts",
+        "item_index": 0,
+        "item_index_base": 0,
+        "source_id": "S006",
+        "matched_markers": [
+          "尚未核实"
+        ],
+        "rule": "fact_from_claim_or_unverified_context",
+        "scope": "original_unit_prefix_sentence_and_continuation",
+        "unit_index": 5,
+        "scope_start": 0,
+        "scope_end": 30
+      }
+    },
+    {
+      "case_id": "log_completeness_pending",
+      "section": "pending_evidence",
+      "item_index": 0,
+      "source_id": "S006",
+      "quote": "模拟资料目录：仅列出检查摘要，原始车载日志是否完整尚未核实。",
+      "text": "模拟资料目录：仅列出检查摘要，原始车载日志是否完整尚未核实。",
+      "kind": "推断",
+      "reasoning": "待核实推断：原始车载日志是否完整？",
+      "interpretation": "完整原文作为待核实事项的依据，提问而不认定日志已完整或已缺失。",
+      "schema_valid": true,
+      "binding_valid": true,
+      "verification": "待人工核验"
+    },
+    {
+      "case_id": "driver_claim_as_fact",
+      "section": "facts",
+      "item_index": 0,
+      "source_id": "S004",
+      "quote": "模拟驾驶人主张：碰撞发生前系统未发出接管提示。",
+      "text": "模拟驾驶人主张：碰撞发生前系统未发出接管提示。",
+      "kind": "事实",
+      "reasoning": "",
+      "interpretation": "驾驶人的单方主张不能升级事实。",
+      "schema_valid": true,
+      "binding_valid": false,
+      "validation_error_kind": "evidence_binding",
+      "validation_diagnostic": {
+        "section": "facts",
+        "item_index": 0,
+        "item_index_base": 0,
+        "source_id": "S004",
+        "matched_markers": [
+          "主张"
+        ],
+        "rule": "fact_from_claim_or_unverified_context",
+        "scope": "original_unit_prefix_sentence_and_continuation",
+        "unit_index": 3,
+        "scope_start": 0,
+        "scope_end": 23
+      }
+    },
+    {
+      "case_id": "company_claim_as_fact",
+      "section": "facts",
+      "item_index": 0,
+      "source_id": "S005",
+      "quote": "模拟企业主张：提示是否发出仍需核对原始日志。",
+      "text": "模拟企业主张：提示是否发出仍需核对原始日志。",
+      "kind": "事实",
+      "reasoning": "",
+      "interpretation": "企业的单方主张不能升级事实。",
+      "schema_valid": true,
+      "binding_valid": false,
+      "validation_error_kind": "evidence_binding",
+      "validation_diagnostic": {
+        "section": "facts",
+        "item_index": 0,
+        "item_index_base": 0,
+        "source_id": "S005",
+        "matched_markers": [
+          "主张"
+        ],
+        "rule": "fact_from_claim_or_unverified_context",
+        "scope": "original_unit_prefix_sentence_and_continuation",
+        "unit_index": 4,
+        "scope_start": 0,
+        "scope_end": 22
+      }
+    },
+    {
+      "case_id": "driver_claim_kept",
+      "section": "facts",
+      "item_index": 0,
+      "source_id": "S004",
+      "quote": "模拟驾驶人主张：碰撞发生前系统未发出接管提示。",
+      "text": "模拟驾驶人主张：碰撞发生前系统未发出接管提示。",
+      "kind": "主张",
+      "reasoning": "",
+      "interpretation": "facts列表承载主张，但kind必须保留主张。",
+      "schema_valid": true,
+      "binding_valid": true,
+      "verification": "待人工核验"
+    },
+    {
+      "case_id": "company_claim_kept",
+      "section": "facts",
+      "item_index": 0,
+      "source_id": "S005",
+      "quote": "模拟企业主张：提示是否发出仍需核对原始日志。",
+      "text": "模拟企业主张：提示是否发出仍需核对原始日志。",
+      "kind": "主张",
+      "reasoning": "",
+      "interpretation": "企业主张同样独立保留，不由程序确认其内容。",
+      "schema_valid": true,
+      "binding_valid": true,
+      "verification": "待人工核验"
+    },
+    {
+      "case_id": "objective_receipt_record",
+      "section": "facts",
+      "item_index": 0,
+      "source_id": "S003",
+      "quote": "模拟接收记录：2026年11月4日，测试方收到车辆检查材料。",
+      "text": "模拟接收记录：2026年11月4日，测试方收到车辆检查材料。",
+      "kind": "事实",
+      "reasoning": "",
+      "interpretation": "完整独立的客观接收记载应通过，仍待人工核验。",
+      "schema_valid": true,
+      "binding_valid": true,
+      "verification": "待人工核验"
+    }
+  ]
+}

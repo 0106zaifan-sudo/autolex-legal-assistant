@@ -15,9 +15,12 @@ def main(argv=None):
     parser=argparse.ArgumentParser()
     parser.add_argument('--run-live',action='store_true')
     parser.add_argument('--confirm-paid-calls',action='store_true')
+    parser.add_argument('--debug-rejected-samples',action='store_true',
+                        help='显式允许固定模拟材料的绑定失败输出保存至私有本地目录，默认关闭')
     args=parser.parse_args(argv)
     output=ROOT/'.autolex_runtime'/'acceptance'
     if not args.run_live:
+        if args.debug_rejected_samples:raise AcceptanceError('调试开关仅用于显式真实验收；离线定位请用tools/replay_sim_b.py，不读取Secrets')
         if args.confirm_paid_calls:raise AcceptanceError('缺少--run-live，未调用模型')
         path=write_report(preparation_report(),output/'preparation')
         print('仅准备：真实调用0次，等待安全配置。报告：'+str(path))
@@ -42,7 +45,9 @@ def main(argv=None):
     if not verify_password(password,settings.password_hash):raise AcceptanceError('访问认证未通过，未调用模型')
     del password
     print(f'服务商：{settings.provider_spec.label}；请求模型：{settings.model}。仅处理两份固定模拟材料；失败也占次数/输入预算，不自动重试。冷却期默认30秒。',flush=True)
-    report,directory=run_suite(settings,quota,settings.principal,output,confirm_paid=True)
+    options={'confirm_paid':True}
+    if args.debug_rejected_samples:options['debug_rejected_samples']=True
+    report,directory=run_suite(settings,quota,settings.principal,output,**options)
     print('报告已写入：'+str(directory))
     print('真实尝试次数：'+str(report['actual_live_attempts'])+'；人工语义复核仍待完成。')
     return 0 if all(case['call_status']=='response_validated' for case in report['cases']) else 2

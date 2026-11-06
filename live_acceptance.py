@@ -116,7 +116,7 @@ def write_report(report,directory):
     return path
 
 
-def run_suite(settings,store,principal,output_root,*,root=SAMPLES,confirm_paid=False,executor=None,sleeper=time.sleep):
+def run_suite(settings,store,principal,output_root,*,root=SAMPLES,confirm_paid=False,executor=None,sleeper=time.sleep,debug_rejected_samples=False):
     if not confirm_paid:
         raise AcceptanceError('未明确允许两次付费请求；仅可运行准备模式')
     _,loaded=load_scenarios(root)
@@ -138,7 +138,10 @@ def run_suite(settings,store,principal,output_root,*,root=SAMPLES,confirm_paid=F
             if delay>60:raise AcceptanceError('冷却等待超出本批次上限；不会自动重复请求')
             sleeper(delay+0.05)
         try:
-            result=executor(record,settings,store,principal,True,coverage_acknowledged=True)
+            options={'coverage_acknowledged':True}
+            if debug_rejected_samples is True:
+                options['debug_rejected_samples']=True
+            result=executor(record,settings,store,principal,True,**options)
             receipt=result.get('call_receipt',{})
             if real and receipt.get('execution_mode')!='live_sdk':
                 raise AcceptanceError('结果不是默认真实SDK路径，不能计入真实模型验收')

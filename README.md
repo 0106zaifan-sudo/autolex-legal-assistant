@@ -151,3 +151,7 @@ python -m unittest discover -s tests -v
 开发分支`feature/multi-provider-deepseek`继承`feature/live-ai-acceptance`。服务商配置不改变案件结构、引文核验、解析覆盖确认和单实例共享限流；不同服务商不共用密钥、不自动切换。调用回执新增provider、端点及缓存/推理token对账记录，未知费用不填零。
 
 [完整配置、官方兼容性核对、Codespaces及SIM_A/SIM_B验收步骤](docs/MULTI_PROVIDER.md)。本轮仅完成离线工程验证，未执行真实付费调用，也未部署公开网页。最新测试结果见[TEST_REPORT.md](TEST_REPORT.md)。
+
+## 固定SIM_B失败定位（完全离线）
+
+`python tools/replay_sim_b.py`生成9项人工构造对照，不读取Secrets、不访问模型。可选私有调试仅面向哈希固定的SIM_A/SIM_B，默认关闭，失败输出不作为有效案件结果。操作和下一次真实复测清单见[SIM_B调试说明](docs/SIM_B_DEBUG.md)；本轮不修改分类规则，也未执行付费验收。
