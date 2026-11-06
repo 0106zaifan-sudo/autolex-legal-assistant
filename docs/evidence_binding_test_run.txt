@@ -1,0 +1,84 @@
+test_empty_sections_allowed_without_invention (test_ai_analysis.AnalysisTests.test_empty_sections_allowed_without_invention) ... ok
+test_failure_still_consumes_shared_quota (test_ai_analysis.AnalysisTests.test_failure_still_consumes_shared_quota) ... ok
+test_hallucinated_or_ambiguous_reference_rejected (test_ai_analysis.AnalysisTests.test_hallucinated_or_ambiguous_reference_rejected) ... ok
+test_incomplete_refusal_and_invalid_json_are_not_saved (test_ai_analysis.AnalysisTests.test_incomplete_refusal_and_invalid_json_are_not_saved) ... ok
+test_long_line_chunks_preserve_original_offsets (test_ai_analysis.AnalysisTests.test_long_line_chunks_preserve_original_offsets) ... ok
+test_malformed_provider_json_is_rejected (test_ai_analysis.AnalysisTests.test_malformed_provider_json_is_rejected) ... ok
+test_official_sdk_roundtrip_and_original_trace (test_ai_analysis.AnalysisTests.test_official_sdk_roundtrip_and_original_trace) ... ok
+test_over_limit_or_blank_input_never_calls_sdk (test_ai_analysis.AnalysisTests.test_over_limit_or_blank_input_never_calls_sdk) ... ok
+test_prompt_injection_cannot_add_output_fields_or_sources (test_ai_analysis.AnalysisTests.test_prompt_injection_cannot_add_output_fields_or_sources) ... ok
+test_sdk_errors_are_safe_and_not_retried (test_ai_analysis.AnalysisTests.test_sdk_errors_are_safe_and_not_retried) ... ok
+test_unauthorized_missing_key_and_no_consent_never_call_sdk (test_ai_analysis.AnalysisTests.test_unauthorized_missing_key_and_no_consent_never_call_sdk) ... ok
+test_another_file_with_identical_text_cannot_reuse_result_or_sources (test_ai_analysis.EvidenceBindingTests.test_another_file_with_identical_text_cannot_reuse_result_or_sources) ... ok
+test_broad_quote_with_multiple_dates_cannot_justify_selected_date (test_ai_analysis.EvidenceBindingTests.test_broad_quote_with_multiple_dates_cannot_justify_selected_date) ... ok
+test_changed_parse_snapshot_and_tampered_source_map_are_rejected (test_ai_analysis.EvidenceBindingTests.test_changed_parse_snapshot_and_tampered_source_map_are_rejected) ... ok
+test_date_only_does_not_assert_intraday_order (test_ai_analysis.EvidenceBindingTests.test_date_only_does_not_assert_intraday_order) ... ok
+test_date_precision_never_creates_midnight (test_ai_analysis.EvidenceBindingTests.test_date_precision_never_creates_midnight) ... ok
+test_declared_precision_must_match_the_complete_original_time (test_ai_analysis.EvidenceBindingTests.test_declared_precision_must_match_the_complete_original_time) ... ok
+test_detached_event_conclusion_and_inferred_timeline_are_rejected (test_ai_analysis.EvidenceBindingTests.test_detached_event_conclusion_and_inferred_timeline_are_rejected) ... ok
+test_fraction_timezone_and_unsupported_clock_are_not_silently_dropped (test_ai_analysis.EvidenceBindingTests.test_fraction_timezone_and_unsupported_clock_are_not_silently_dropped) ... ok
+test_generated_event_and_time_anchors_replay_exact_original_spans (test_ai_analysis.EvidenceBindingTests.test_generated_event_and_time_anchors_replay_exact_original_spans) ... ok
+test_inference_support_is_never_claimed_semantically_verified (test_ai_analysis.EvidenceBindingTests.test_inference_support_is_never_claimed_semantically_verified) ... ok
+test_invalid_calendar_dates_and_clock_values_are_rejected (test_ai_analysis.EvidenceBindingTests.test_invalid_calendar_dates_and_clock_values_are_rejected) ... ok
+test_invented_time_or_unknown_with_concrete_date_is_rejected (test_ai_analysis.EvidenceBindingTests.test_invented_time_or_unknown_with_concrete_date_is_rejected) ... ok
+test_legacy_schema_is_explicitly_rejected_and_fixture_is_versioned (test_ai_analysis.EvidenceBindingTests.test_legacy_schema_is_explicitly_rejected_and_fixture_is_versioned) ... ok
+test_minute_precision_does_not_assert_seconds_order (test_ai_analysis.EvidenceBindingTests.test_minute_precision_does_not_assert_seconds_order) ... ok
+test_minute_second_and_iso_formats_preserve_precision (test_ai_analysis.EvidenceBindingTests.test_minute_second_and_iso_formats_preserve_precision) ... ok
+test_newline_boundaries_in_pdf_like_text_are_preserved (test_ai_analysis.EvidenceBindingTests.test_newline_boundaries_in_pdf_like_text_are_preserved) ... ok
+test_opposing_claims_at_same_time_remain_separate (test_ai_analysis.EvidenceBindingTests.test_opposing_claims_at_same_time_remain_separate) ... ok
+test_partial_relative_approximate_or_uncertain_times_stay_unknown (test_ai_analysis.EvidenceBindingTests.test_partial_relative_approximate_or_uncertain_times_stay_unknown) ... ok
+test_regenerated_simulated_fixture_is_bound_to_regenerated_document (test_ai_analysis.EvidenceBindingTests.test_regenerated_simulated_fixture_is_bound_to_regenerated_document) ... ok
+test_repair_date_cannot_be_bound_to_collision_audit_probe_a (test_ai_analysis.EvidenceBindingTests.test_repair_date_cannot_be_bound_to_collision_audit_probe_a) ... ok
+test_repeated_quote_is_not_silently_bound_to_first_match (test_ai_analysis.EvidenceBindingTests.test_repeated_quote_is_not_silently_bound_to_first_match) ... ok
+test_same_anchor_is_not_duplicated_as_two_events (test_ai_analysis.EvidenceBindingTests.test_same_anchor_is_not_duplicated_as_two_events) ... ok
+test_selective_excerpt_cannot_drop_negation_or_attribution (test_ai_analysis.EvidenceBindingTests.test_selective_excerpt_cannot_drop_negation_or_attribution) ... ok
+test_separate_events_in_same_unit_keep_their_own_times (test_ai_analysis.EvidenceBindingTests.test_separate_events_in_same_unit_keep_their_own_times) ... ok
+test_unknown_or_tampered_references_are_rejected (test_ai_analysis.EvidenceBindingTests.test_unknown_or_tampered_references_are_rejected) ... ok
+test_unknown_time_has_no_normalized_instant_or_time_anchor (test_ai_analysis.EvidenceBindingTests.test_unknown_time_has_no_normalized_instant_or_time_anchor) ... ok
+test_unresolved_order_uses_original_positions_not_model_order (test_ai_analysis.EvidenceBindingTests.test_unresolved_order_uses_original_positions_not_model_order) ... ok
+test_authenticated_key_and_consent_are_required (test_ai_ui.UIAccessTests.test_authenticated_key_and_consent_are_required) ... 2026-11-06 09:02:27.408 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_invalid_secrets_fail_closed_without_traceback (test_ai_ui.UIAccessTests.test_invalid_secrets_fail_closed_without_traceback) ... 2026-11-06 09:02:28.342 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_local_no_key_ai_disabled_but_demo_works (test_ai_ui.UIAccessTests.test_local_no_key_ai_disabled_but_demo_works) ... 2026-11-06 09:02:28.724 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_public_without_access_config_is_locked (test_ai_ui.UIAccessTests.test_public_without_access_config_is_locked) ... 2026-11-06 09:02:28.975 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_rotating_password_invalidates_existing_session (test_ai_ui.UIAccessTests.test_rotating_password_invalidates_existing_session) ... 2026-11-06 09:02:29.187 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_wrong_login_correct_login_and_logout_clear_data (test_ai_ui.UIAccessTests.test_wrong_login_correct_login_and_logout_clear_data) ... 2026-11-06 09:02:29.619 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-11-06 09:02:30.075 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_load_search_review_export_and_clear (test_app.AppTests.test_load_search_review_export_and_clear) ... 2026-11-06 09:02:30.087 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_credentials_git_data_and_runtime_are_never_bundled (test_archive.ArchiveTests.test_credentials_git_data_and_runtime_are_never_bundled) ... ok
+test_symlink_to_external_content_is_excluded (test_archive.ArchiveTests.test_symlink_to_external_content_is_excluded) ... ok
+test_blank_pdf_warns (test_core.CoreTests.test_blank_pdf_warns) ... ok
+test_content_simulation_marker (test_core.CoreTests.test_content_simulation_marker) ... ok
+test_exact_source_trace (test_core.CoreTests.test_exact_source_trace) ... ok
+test_export_reopens_preserves_trace_and_neutralizes_formula (test_core.CoreTests.test_export_reopens_preserves_trace_and_neutralizes_formula) ... ok
+test_filters (test_core.CoreTests.test_filters) ... ok
+test_invalid_files_and_limits (test_core.CoreTests.test_invalid_files_and_limits) ... invalid pdf header: b'bad'
+EOF marker not found
+EOF marker not found
+ok
+test_keyword_full_text_and_and_semantics (test_core.CoreTests.test_keyword_full_text_and_and_semantics) ... ok
+test_long_original_preserved (test_core.CoreTests.test_long_original_preserved) ... ok
+test_missing_fields_never_invented_and_table_read (test_core.CoreTests.test_missing_fields_never_invented_and_table_read) ... ok
+test_multiple_mentions_kept (test_core.CoreTests.test_multiple_mentions_kept) ... ok
+test_pdf_and_docx_same_candidates (test_core.CoreTests.test_pdf_and_docx_same_candidates) ... ok
+test_review_audit_and_aggregate (test_core.CoreTests.test_review_audit_and_aggregate) ... ok
+test_review_requires_identity_and_evidence (test_core.CoreTests.test_review_requires_identity_and_evidence) ... ok
+test_atomic_parallel_calls_allow_one_inflight (test_security.SecurityTests.test_atomic_parallel_calls_allow_one_inflight) ... ok
+test_cooldown_and_hourly_expiry (test_security.SecurityTests.test_cooldown_and_hourly_expiry) ... ok
+test_hash_password_validation_and_comparison (test_security.SecurityTests.test_hash_password_validation_and_comparison) ... ok
+test_invalid_settings_rejected (test_security.SecurityTests.test_invalid_settings_rejected) ... ok
+test_lease_expiration_and_global_login_throttle (test_security.SecurityTests.test_lease_expiration_and_global_login_throttle) ... ok
+test_secrets_only_and_fail_closed_defaults (test_security.SecurityTests.test_secrets_only_and_fail_closed_defaults) ... ok
+test_shared_persistent_daily_and_hourly_limits (test_security.SecurityTests.test_shared_persistent_daily_and_hourly_limits) ... ok
+test_storage_failure_and_unauthenticated_fail_closed (test_security.SecurityTests.test_storage_failure_and_unauthenticated_fail_closed) ... ok
+
+----------------------------------------------------------------------
+Ran 68 tests in 5.875s
+
+OK

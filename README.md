@@ -1,6 +1,6 @@
 # 智能网联汽车法律资料整理与检索助手
 
-面向法学及司法鉴定研究生的 AI 法务实习演示项目。第二阶段开发分支：`feature/ai-case-facts`。原有 PDF/DOCX 解析、规则提取、检索与 Excel 导出保持离线；新增可选的 OpenAI 官方 SDK 案件事实分析。AI 需要单独配置 Secrets、登录并确认发送资料，可能产生 API 费用。未配置密钥时禁用 AI，不用模拟结果冒充模型输出。
+面向法学及司法鉴定研究生的 AI 法务实习演示项目。第二阶段基线：`feature/ai-case-facts`；P0证据绑定补丁：`feature/fix-evidence-binding`。原有 PDF/DOCX 解析、规则提取、检索与 Excel 导出保持离线；新增可选的 OpenAI 官方 SDK 案件事实分析。AI 需要单独配置 Secrets、登录并确认发送资料，可能产生 API 费用。未配置密钥时禁用 AI，不用模拟结果冒充模型输出。
 
 ## 架构与文件
 
@@ -60,7 +60,7 @@ APP_MODE = "local"
 
 浏览器打开 **http://localhost:8501**。此地址指运行命令的那台电脑。在云端启动时，需要平台提供的 8501 端口预览/转发入口，不能用自己电脑的 localhost 访问云端。
 
-首次安装依赖需要网络；之后规则功能和固定模拟分析可离线使用。程序关闭 Streamlit 使用统计。只有用户确认并点击 AI 按钮时，所选文档正文才发送到官方 OpenAI API；文件名和哈希不发送。安装依赖使用包仓库。请先用模拟资料演示。
+首次安装依赖需要网络；之后规则功能和固定模拟分析可离线使用。程序关闭 Streamlit 使用统计。只有用户确认并点击 AI 按钮时，所选文档正文及证据绑定所需的文件/解析文本哈希与版本标识才发送到官方 OpenAI API；文件名不发送。安装依赖使用包仓库。请先用模拟资料演示。
 
 运行测试：
 
@@ -125,3 +125,9 @@ python -m unittest discover -s tests -v
 完整步骤见 [PHASE2_ACCEPTANCE.md](PHASE2_ACCEPTANCE.md)。最小公开配置需要 `APP_MODE="public"`、`APP_PASSWORD_HASH`，没有密码哈希会锁定全部资料功能；AI 另外需要 `OPENAI_API_KEY`、`AI_SINGLE_INSTANCE=true` 和可写的 SQLite 存储。仅从 Streamlit Secrets 读取密钥，不使用环境变量回退，也不提供网页密钥输入框。
 
 生成访问密码哈希：`python tools/hash_password.py`，在自己的终端交互输入密码；只把生成的哈希写入 Secrets，不提交密码、哈希或实际 Secrets 文件。官方 SDK 使用固定官方 API 地址、30秒超时、关闭自动重试、`store=False`、输入24000字符/80块及输出4000 token上限。`store=False` 不等于服务商零保留承诺。默认模型为 `gpt-4.1-mini`，管理员可在 Secrets 变更；实际可用性和费用取决于 API 账户。
+
+## P0-A 证据绑定补丁（Schema 2.0）
+
+时间线事件现在必须使用唯一、完整的原文句段；时间锚点必须位于同一事件引文中，不能借用维修日期或其他段落。未知/无法支持的时间显示“未知”，不会生成具体日期。返回数据区分date/minute/second/unknown精度，日期不补00:00；同日含仅日期记录时不声称日内顺序。
+
+文件和解析文本快照绑定、Schema/Prompt/解析契约版本随JSON导出。模拟响应已明确迁移到2.0，旧响应不自动复用，需重新分析。现有界面和原资料整理流程未修改。完整验收、测试结果和局限见 [证据绑定补丁说明](docs/EVIDENCE_BINDING_PATCH.md)。

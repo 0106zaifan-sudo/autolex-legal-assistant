@@ -1,4 +1,9 @@
 {
+  "schema_version": "2.0",
+  "prompt_version": "evidence-binding-v2",
+  "parser_version": "core.read_units/v1",
+  "document_sha256": "7d04f7cbe903269618e9a793480c48345bdf381b09e91d6bc6f57b0f3e92411e",
+  "parsed_text_sha256": "07a50a452ab02306d12eac5a5f43b0cfbe8c702c5f479da6de05255b9140be38",
   "facts": [
     {
       "kind": "事实",
@@ -45,7 +50,17 @@
           "quote": "维修记录记载：2026年11月1日08:30，测试车辆在模拟封闭场地发生碰撞。"
         }
       ],
-      "time_text": "2026年11月1日08:30"
+      "time_state": "explicit",
+      "time_text": "2026年11月1日08:30",
+      "time_precision": "minute",
+      "event_source": {
+        "source_id": "S002",
+        "quote": "维修记录记载：2026年11月1日08:30，测试车辆在模拟封闭场地发生碰撞。"
+      },
+      "time_source": {
+        "source_id": "S002",
+        "quote": "维修记录记载：2026年11月1日08:30，测试车辆在模拟封闭场地发生碰撞。"
+      }
     },
     {
       "kind": "主张",
@@ -57,7 +72,17 @@
           "quote": "测试驾驶人主张：2026年11月1日08:29已接管方向盘，碰撞前未收到提示。"
         }
       ],
-      "time_text": "2026年11月1日08:29"
+      "time_state": "explicit",
+      "time_text": "2026年11月1日08:29",
+      "time_precision": "minute",
+      "event_source": {
+        "source_id": "S003",
+        "quote": "测试驾驶人主张：2026年11月1日08:29已接管方向盘，碰撞前未收到提示。"
+      },
+      "time_source": {
+        "source_id": "S003",
+        "quote": "测试驾驶人主张：2026年11月1日08:29已接管方向盘，碰撞前未收到提示。"
+      }
     },
     {
       "kind": "主张",
@@ -69,7 +94,17 @@
           "quote": "测试企业主张：2026年11月1日08:29系统已发出接管提示。"
         }
       ],
-      "time_text": "2026年11月1日08:29"
+      "time_state": "explicit",
+      "time_text": "2026年11月1日08:29",
+      "time_precision": "minute",
+      "event_source": {
+        "source_id": "S004",
+        "quote": "测试企业主张：2026年11月1日08:29系统已发出接管提示。"
+      },
+      "time_source": {
+        "source_id": "S004",
+        "quote": "测试企业主张：2026年11月1日08:29系统已发出接管提示。"
+      }
     }
   ],
   "issues": [

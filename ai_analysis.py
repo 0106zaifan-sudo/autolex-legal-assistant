@@ -3,11 +3,17 @@ from __future__ import annotations
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import Literal
+import hashlib
 import json
 import re
 from pydantic import BaseModel, ConfigDict, Field
 from openai import OpenAI, APIConnectionError, APITimeoutError, AuthenticationError, RateLimitError, APIStatusError
 from security import SecurityError
+
+SCHEMA_VERSION = '2.0'
+PROMPT_VERSION = 'evidence-binding-v2'
+PARSER_VERSION = 'core.read_units/v1'
+SECTIONS = ('facts', 'timeline', 'issues', 'pending_evidence')
 
 MAX_INPUT_CHARS = 24000
 MAX_SOURCES = 80
@@ -23,7 +29,16 @@ kind 必须区分事实、主张、推断。事实表示资料记载而非认定
 主张所在文本块的项目不得标为事实。推断 reasoning 必须用“待核实推断：”开头，非推断 reasoning 为空。
 issues 和 pending_evidence 全部标为推断，只提出待核实问题，不得断言责任归属或证据存在/缺失。
 推断 reasoning 只能提出以问号结束的待核实问题，不陈述新事实或归责结论。
-不输出法条、法律效力判断、案例或案号。不得编造事故时间；timeline.time_text 只能是引文中的原样时间，或“未记载”。
+不输出法条、法律效力判断、案例或案号。不得编造事故时间。
+必须逐字回传输入context的schema_version、prompt_version、parser_version、document_sha256、parsed_text_sha256。
+timeline只接受原文事实/主张摘录，不接受推断；text必须与event_source.quote完全一致。
+每条timeline的sources只能有event_source这一条；event_source必须是同一条原文的唯一、连续、完整的单句摘录，不得截去说话人、否定词或限定语。
+有明确时间时time_state=explicit，time_source必须与event_source完全相同，time_text为该事件引文中唯一的完整原样日期/时间。
+同一引文出现多个日期/时刻或无法确认时间与事件关系时，不能任选其一。请缩小至独立原文事件引文，否则设为未知。
+不得把其他事件或维修日期挪给事故；不得把不同段落、不同日期的片段拼成一条事件。
+time_precision只能为date、minute、second或unknown；必须与原文相符，不得删去已记载的时分秒来伪装日期精度。
+无明确完整日期、只有时分/相对日期/估计时间或时间关系不清时：time_state=unknown，time_text=未知，time_precision=unknown，time_source=null。
+不得将日期精度补成已知00:00。事实与主张中的推理说明仍为空。
 矛盾陈述分别保留为主张，不擅自取舍。不能根据日期先后推断因果。
 '''
 
@@ -49,17 +64,39 @@ class Item(StrictModel):
 
 
 class TimelineItem(Item):
+    event_source: Reference
+    time_state: Literal['explicit', 'unknown']
     time_text: str = Field(min_length=1, max_length=80)
+    time_source: Reference | None
+    time_precision: Literal['date', 'minute', 'second', 'unknown']
 
 
 class Analysis(StrictModel):
+    schema_version: Literal['2.0']
+    prompt_version: Literal['evidence-binding-v2']
+    parser_version: Literal['core.read_units/v1']
+    document_sha256: str = Field(pattern=r'^[0-9a-f]{64}$')
+    parsed_text_sha256: str = Field(pattern=r'^[0-9a-f]{64}$')
     facts: list[Item] = Field(max_length=12)
     timeline: list[TimelineItem] = Field(max_length=12)
     issues: list[Item] = Field(max_length=8)
     pending_evidence: list[Item] = Field(max_length=8)
 
 
+def analysis_context(record):
+    """本次解析文本快照；文件/文本/解析版本必须同时匹配，不迁就旧分析。"""
+    snapshot = json.dumps(record['units'], ensure_ascii=False, sort_keys=True, separators=(',', ':'))
+    return {'schema_version': SCHEMA_VERSION, 'prompt_version': PROMPT_VERSION,
+            'parser_version': PARSER_VERSION, 'document_sha256': record['文件SHA256'],
+            'parsed_text_sha256': hashlib.sha256(snapshot.encode()).hexdigest()}
+
+
+def empty_analysis(record):
+    return {**analysis_context(record), **{name: [] for name in SECTIONS}}
+
+
 def build_sources(record):
+    context = analysis_context(record)
     sources = []
     total = 0
     for ui, unit in enumerate(record['units'], 1):
@@ -73,7 +110,7 @@ def build_sources(record):
                 total += len(text)
                 if total > MAX_INPUT_CHARS or len(sources) >= MAX_SOURCES:
                     raise AIError('正文超过 AI 输入上限（24000 字符或80块），请拆分文件后分析；未发送任何内容。')
-                sources.append({'source_id': f'S{len(sources) + 1:03}', 'text': text,
+                sources.append({**context, 'source_id': f'S{len(sources) + 1:03}', 'text': text,
                                 'location': unit['location'], 'unit_index': ui - 1, 'start': cursor + offset})
             cursor += len(line)
     if not sources:
@@ -81,22 +118,133 @@ def build_sources(record):
     return sources
 
 
-def _time_key(text):
-    m = re.search(r'(\d{4})年(\d{1,2})月(\d{1,2})日(?:\s*(\d{1,2}):(\d{2}))?', text)
-    if m:
-        try:
-            return datetime(*(int(v) if v else 0 for v in m.groups())).isoformat()
-        except ValueError:
-            pass
-    return ''
+# 仅支持无歧义的公历完整日期，可选时分/秒。不替相对日期、时区或中文时刻推算时间。
+DATE_TIME = re.compile(
+    r'(?<!\d)(?P<date>\d{4}年\d{1,2}月\d{1,2}日|\d{4}-\d{1,2}-\d{1,2}|\d{4}/\d{1,2}/\d{1,2})'
+    r'(?:[ T]*(?P<clock>\d{1,2}:\d{2}(?::\d{2})?))?(?!\d)')
+OTHER_TIME = re.compile(r'\d{1,2}:\d{2}|\d{1,2}(?:时|点|分|秒|月|日)|\d{4}年|\d{4}[-/]\d|(?<!\d)\d{1,2}[-/]\d{1,2}(?!\d)')
+UNCERTAIN_TIME = re.compile(r'时间(?:未知|不明|不详)|日期(?:未知|不明|不详)|无法(?:确定|确认)|尚未(?:确定|确认)|并非|不是|并未|未于|未发生|不早于|不晚于|早于|晚于|之前|之后|前后|预计|估计|推测|疑似|大约|可能|约于|约在|约(?=\d)|左右|次日|翌日|昨日|昨天|次月|次年')
+SENTENCE_END = re.compile(r'[。！？!?；;\r\n]')
+
+
+def _explicit_time(text, quote):
+    matches = list(DATE_TIME.finditer(quote))
+    remainder = DATE_TIME.sub('', quote)
+    if (len(matches) != 1 or OTHER_TIME.search(remainder) or UNCERTAIN_TIME.search(quote)
+            or matches[0].group() != text):
+        raise AIError('事件引文没有唯一、明确且完整的时间，请拆分事件或标记未知；禁止借用其他事件日期。')
+    match = matches[0]
+    tail = quote[match.end():]
+    if (re.match(r'(?:[.,]\d|Z|[+-]\d{2}:?\d{2})', tail)
+            or re.search(r'UTC|GMT|时区|北京时间', quote, re.IGNORECASE)):
+        raise AIError('原文包含尚未支持的毫秒或时区，请标记未知，不能截掉额外精度。')
+    try:
+        year, month, day = (int(x) for x in re.findall(r'\d+', match['date']))
+        date = datetime(year, month, day)
+        if match['clock']:
+            clock = [int(x) for x in match['clock'].split(':')]
+            date = date.replace(hour=clock[0], minute=clock[1], second=clock[2] if len(clock) == 3 else 0)
+            precision = 'second' if len(clock) == 3 else 'minute'
+            normalized = date.isoformat(timespec='seconds' if precision == 'second' else 'minutes')
+        else:
+            precision, normalized = 'date', date.date().isoformat()
+    except ValueError:
+        raise AIError('原文日期或时刻无法解析，请标记未知并人工核验。') from None
+    return precision, normalized, match.start()
+
+
+def _timeline_binding(item, refs, context, record):
+    # 一个事件只接纳一条主引文，不允许用附加维修材料满足时间包含检查。
+    if item.kind == '推断' or len(item.sources) != 1 or item.sources[0] != item.event_source:
+        raise AIError('时间线必须使用单一事件原文引文；不能拼接其他事件证据或推断成事件。')
+    event = refs[0]
+    if item.text != item.event_source.quote:
+        raise AIError('事件正文必须完整等于主引文，不能用大段材料支撑另一事件结论。')
+    content = item.text.rstrip('。！？!?；; \t')
+    if SENTENCE_END.search(content):
+        raise AIError('事件引文跨句或跨行，请拆为独立原文事件；不能合并多个事件的时间。')
+    unit_text = record['units'][event['unit_index']]['text']
+    before, after = unit_text[:event['start']].rstrip(' \t'), unit_text[event['end']:].lstrip(' \t')
+    delimiters = '。！？!?；;\r\n'
+    if ((before and before[-1] not in delimiters)
+            or (item.text[-1] not in delimiters and after and after[0] not in delimiters)):
+        raise AIError('事件引文不是完整原文句段，可能截掉主张、否定或时间限定，结果已拒绝。')
+    identity = json.dumps([context['document_sha256'], context['parsed_text_sha256'],
+                           context['parser_version'], event['unit_index'], event['start'], event['end']])
+    bound = {'statement_id': 'event_' + hashlib.sha256(identity.encode()).hexdigest()[:24],
+             'event_source': dict(event), 'time_state': item.time_state,
+             'time_precision': item.time_precision, 'time_text': item.time_text,
+             'time_source': None, 'normalized_time': None, 'sort_time': ''}
+    if item.time_state == 'unknown':
+        if item.time_text != '未知' or item.time_source is not None or item.time_precision != 'unknown':
+            raise AIError('未知时间必须明确标为未知，不能附带具体日期、时间来源或伪造精度。')
+        bound['chronology_status'] = '时间未知，未参与排序'
+        return bound
+    if item.time_source != item.event_source:
+        raise AIError('时间来源必须绑定本事件的同一主引文，不能借用维修或其他段落日期。')
+    precision, normalized, offset = _explicit_time(item.time_text, item.text)
+    if precision != item.time_precision:
+        raise AIError('时间精度与完整原文不一致，禁止自行补充或丢弃时分秒。')
+    # 时间锚点由程序从已校验事件引文中计算；模型无权提供坐标。
+    bound['time_source'] = {**event, 'quote': item.time_text,
+                            'start': event['start'] + offset,
+                            'end': event['start'] + offset + len(item.time_text)}
+    bound['normalized_time'] = normalized
+    # 日期保留YYYY-MM-DD，不产生伪精确的午夜sort_time。
+    bound['sort_time'] = normalized if precision != 'date' else ''
+    bound['chronology_status'] = '原文时间，先后不代表因果'
+    return bound
+
+
+def _event_order(row):
+    anchor = row['event_source']
+    return (anchor['unit_index'], anchor['start'], anchor['end'])
+
+
+def _order_timeline(items):
+    """按天排序；有日期精度的同日组保留材料顺序，不把日期当成午夜。"""
+    dated, unknown = {}, []
+    for row in items:
+        if row['time_state'] == 'unknown':
+            unknown.append(row)
+        else:
+            dated.setdefault(row['normalized_time'][:10], []).append(row)
+    ordered = []
+    for day in sorted(dated):
+        group = dated[day]
+        if any(row['time_precision'] == 'date' for row in group):
+            for row in group:
+                row['chronology_status'] = '同日含仅日期记录，日内顺序待核实'
+            ordered.extend(sorted(group, key=_event_order))
+            continue
+        minutes = {}
+        for row in group:
+            minutes.setdefault(row['normalized_time'][:16], []).append(row)
+        for minute in sorted(minutes):
+            peers = minutes[minute]
+            if any(row['time_precision'] == 'minute' for row in peers):
+                if len(peers) > 1:
+                    for row in peers:
+                        row['chronology_status'] = '同分钟记录未确定秒级顺序'
+                ordered.extend(sorted(peers, key=_event_order))
+            else:
+                ordered.extend(sorted(peers, key=lambda row: row['normalized_time']))
+    return ordered + sorted(unknown, key=_event_order)
 
 
 def validate_analysis(parsed, record, sources):
+    if isinstance(parsed, dict) and parsed.get('schema_version') != SCHEMA_VERSION:
+        raise AIError('旧版或未知分析Schema不兼容，请按2.0重新分析；不能静默复用旧证据绑定。')
     parsed = Analysis.model_validate(parsed)
+    context = analysis_context(record)
+    if any(getattr(parsed, key) != value for key, value in context.items()):
+        raise AIError('分析绑定的文件、解析快照或版本不匹配，请重新分析；禁止跨文件复用出处。')
+    if sources != build_sources(record):
+        raise AIError('来源块不是当前文件/解析快照的完整来源清单，结果已拒绝。')
     lookup = {s['source_id']: s for s in sources}
-    result = {'file_name': record['文件名'], 'file_sha256': record['文件SHA256'],
+    result = {**context, 'file_name': record['文件名'], 'file_sha256': record['文件SHA256'],
               'data_type': record['数据类型'], 'verification': '待人工核验', 'sections': {}}
-    for name in ('facts', 'timeline', 'issues', 'pending_evidence'):
+    for name in SECTIONS:
         items = []
         for item in getattr(parsed, name):
             refs = []
@@ -108,7 +256,7 @@ def validate_analysis(parsed, record, sources):
                 end = start + len(ref.quote)
                 if record['units'][src['unit_index']]['text'][start:end] != ref.quote:
                     raise AIError('原文定位校验失败，结果已拒绝。')
-                refs.append({'source_id': ref.source_id, 'quote': ref.quote, 'location': src['location'],
+                refs.append({**context, 'source_id': ref.source_id, 'quote': ref.quote, 'location': src['location'],
                              'unit_index': src['unit_index'], 'start': start, 'end': end})
             quotes = [r['quote'] for r in refs]
             if not any(item.text in quote for quote in quotes):
@@ -129,14 +277,15 @@ def validate_analysis(parsed, record, sources):
             if AUTHORITY.search(item.text):
                 raise AIError('AI 模块不输出法律或案例引用，请使用原文规则提取并人工核验。')
             row = {'kind': item.kind, 'text': item.text, 'reasoning': item.reasoning,
-                   'verification': '待人工核验', 'sources': refs}
+                   'verification': '待人工核验', 'sources': refs,
+                   'support_status': '推断支持关系待人工核验' if item.kind == '推断' else '仅校验原文摘录一致性'}
             if name == 'timeline':
-                if item.time_text != '未记载' and not any(item.time_text in quote for quote in quotes):
-                    raise AIError('事故时间不在引文中，结果已拒绝。')
-                row.update(time_text=item.time_text, sort_time=_time_key(item.time_text))
+                row.update(_timeline_binding(item, refs, context, record))
+                if any(row['statement_id'] == prior['statement_id'] for prior in items):
+                    raise AIError('同一原文事件被重复输出，请人工核验，不自动合并或选取。')
             items.append(row)
         if name == 'timeline':
-            items.sort(key=lambda row: (not bool(row['sort_time']), row['sort_time']))
+            items = _order_timeline(items)
         result['sections'][name] = items
     return result
 
@@ -155,7 +304,7 @@ def analyze_record(record, settings, store, principal, consent=False, client_fac
                             timeout=30.0, max_retries=0) as client:
             response = client.responses.parse(
                 model=settings.model, instructions=PROMPT,
-                input=json.dumps({'sources': [{'source_id': s['source_id'], 'text': s['text']} for s in sources]}, ensure_ascii=False),
+                input=json.dumps({'context': analysis_context(record), 'sources': [{'source_id': s['source_id'], 'text': s['text']} for s in sources]}, ensure_ascii=False),
                 text_format=Analysis, max_output_tokens=MAX_OUTPUT_TOKENS, store=False,
                 truncation='disabled')
         if response.status != 'completed' or response.output_parsed is None:

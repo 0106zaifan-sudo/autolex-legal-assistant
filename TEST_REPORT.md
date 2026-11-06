@@ -1,3 +1,13 @@
+# 最新：P0-A 证据绑定补丁测试
+
+日期：2026-11-06（北京时间）；分支：`feature/fix-evidence-binding`，基于AI分支`5307554`。
+
+实际执行 `python -m unittest discover -s tests -v`：**68项通过，5.875秒**。包含原41项回归及27项新增绑定测试。原有测试按Schema 2.0更新固定响应和空分析构造，保留原检查意图。全部使用内存模拟资料、官方SDK的HTTP mock及Streamlit AppTest；无真实付费模型调用。
+
+详细范围和未解决问题见 `docs/EVIDENCE_BINDING_PATCH.md`，完整本次日志见 `docs/evidence_binding_test_run.txt`。以下为保留的第二阶段历史测试记录，不代表本次最新数量。
+
+---
+
 # AutoLex 第二阶段实际测试报告
 
 测试日期：2026-11-06（北京时间）。环境：Linux，Python 3.12。
