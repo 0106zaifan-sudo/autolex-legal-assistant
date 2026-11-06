@@ -1,0 +1,23 @@
+test_load_search_review_export_and_clear (test_app.AppTests.test_load_search_review_export_and_clear) ... 2026-11-06 08:24:36.600 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_blank_pdf_warns (test_core.CoreTests.test_blank_pdf_warns) ... ok
+test_content_simulation_marker (test_core.CoreTests.test_content_simulation_marker) ... ok
+test_exact_source_trace (test_core.CoreTests.test_exact_source_trace) ... ok
+test_export_reopens_preserves_trace_and_neutralizes_formula (test_core.CoreTests.test_export_reopens_preserves_trace_and_neutralizes_formula) ... ok
+test_filters (test_core.CoreTests.test_filters) ... ok
+test_invalid_files_and_limits (test_core.CoreTests.test_invalid_files_and_limits) ... invalid pdf header: b'bad'
+EOF marker not found
+EOF marker not found
+ok
+test_keyword_full_text_and_and_semantics (test_core.CoreTests.test_keyword_full_text_and_and_semantics) ... ok
+test_long_original_preserved (test_core.CoreTests.test_long_original_preserved) ... ok
+test_missing_fields_never_invented_and_table_read (test_core.CoreTests.test_missing_fields_never_invented_and_table_read) ... ok
+test_multiple_mentions_kept (test_core.CoreTests.test_multiple_mentions_kept) ... ok
+test_pdf_and_docx_same_candidates (test_core.CoreTests.test_pdf_and_docx_same_candidates) ... ok
+test_review_audit_and_aggregate (test_core.CoreTests.test_review_audit_and_aggregate) ... ok
+test_review_requires_identity_and_evidence (test_core.CoreTests.test_review_requires_identity_and_evidence) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 1.166s
+
+OK

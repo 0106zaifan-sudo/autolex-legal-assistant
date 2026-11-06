@@ -1,0 +1,50 @@
+{
+  "baseline": "53075548bcf7f0dd814b0d2e02d65ae170d7f2dd",
+  "paid_api_calls": 0,
+  "probe_count": 7,
+  "results": [
+    {
+      "probe": "A_time_event_mismatch",
+      "observed": "accepted",
+      "event": "模拟记录A：2026年11月1日08:30，车辆在封闭场地发生碰撞。",
+      "bound_time": "2026年11月2日09:00",
+      "meaning": "合法引文仍可拼出事件与时间错配；这是校验器构造输入，不是模型实测输出。"
+    },
+    {
+      "probe": "B_unsupported_hypothesis",
+      "observed": "accepted",
+      "reasoning": "待核实推断：模拟驾驶人饮酒是否导致此次事故？",
+      "meaning": "引证存在并不能支撑生成问题中的新增假设。"
+    },
+    {
+      "probe": "C_claim_marker_miss",
+      "observed": "accepted_as_fact",
+      "source": "模拟调查笔录：驾驶人回忆车辆没有发出接管提示。",
+      "meaning": "含个人回忆的陈述可能漏过关键词分类拦截。"
+    },
+    {
+      "probe": "D_claim_marker_overreject",
+      "observed": "rejected",
+      "meaning": "引文本身只是记录摘录，同块其他主张字样也会使其被拒绝。"
+    },
+    {
+      "probe": "E_short_many_paragraphs",
+      "observed": "rejected_at_source_limit",
+      "characters": 658,
+      "meaning": "远小于24000字的多段材料仍可能触发80块上限；是安全拒绝，不是静默截断。"
+    },
+    {
+      "probe": "F_chunk_boundary",
+      "observed": "contiguous_source_phrase_unquotable",
+      "phrase": "辅助驾驶功能退出",
+      "meaning": "原文中的连续短语跨越无重叠分块后无法作为单条连续引文返回。"
+    },
+    {
+      "probe": "G_regex_candidates",
+      "observed": "prefix_and_book_as_candidates",
+      "court": "原审法院为虚构甲市人民法院",
+      "legal_basis": "《模拟辅助驾驶科普手册》",
+      "meaning": "字段只是待核验候选，不能当成规范法院名或权威法源。"
+    }
+  ]
+}
