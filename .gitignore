@@ -14,3 +14,6 @@ credentials.json
 .ruff_cache/
 .DS_Store
 Thumbs.db
+.autolex_runtime/
+*.sqlite3
+*.sqlite3-*

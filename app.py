@@ -1,14 +1,21 @@
 from pathlib import Path
-import io
-import zipfile
 import pandas as pd
 import streamlit as st
 from core import FIELDS, PENDING, extract, summary, search, review, export_excel
+from ai_ui import enforce_access, load_settings, render_ai_panel
+from security import SecurityError
+from project_archive import build_project_zip
 
 ROOT = Path(__file__).parent
 st.set_page_config(page_title='智能网联汽车法律资料助手', page_icon='⚖️', layout='wide')
 st.title('智能网联汽车法律资料整理与检索助手')
-st.caption('研究生实习作品 · 本地规则提取 MVP · 无付费 AI API')
+st.caption('AutoLex · 原文规则提取 + 可选 AI 案件事实分析')
+try:
+    settings = load_settings()
+except Exception:
+    st.error('Secrets 配置无效，应用已锁定，请管理员检查配置。')
+    st.stop()
+principal = enforce_access(settings)
 st.warning('自动提取仅生成原文候选，不能验证案件真实性、法律效力或适用性。模拟样本均为虚构，不可作为法律依据。')
 if 'records' not in st.session_state:
     st.session_state.records = {}
@@ -37,18 +44,15 @@ with st.sidebar:
         for p in sorted((ROOT / 'samples').glob('*')):
             if p.suffix in ('.pdf', '.docx'):
                 add_file(p.name, p.read_bytes())
-    st.caption('文件和核验记录仅保存在本浏览器会话的服务器内存中；会话丢失或服务重启会清空。请及时导出 Excel。程序不主动调用外部服务。')
+    st.caption('资料与核验记录保存在会话内存中，请及时导出。规则提取不联网；只有确认并点击 AI 分析时，当前资料正文才会发送至 OpenAI API。')
     if st.button('清空本会话资料', width='stretch'):
         records.clear()
+        st.session_state.pop('_ai_result', None)
+        st.session_state.pop('_show_ai_demo', None)
         st.rerun()
     st.divider()
     st.caption('代码、样本和使用文档可下载，解压后在自己的电脑运行。')
-    buf = io.BytesIO()
-    with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as z:
-        for p in ROOT.rglob('*'):
-            if p.is_file() and '__pycache__' not in p.parts and p.suffix not in ('.zip', '.pyc'):
-                z.write(p, 'legal_assistant/' + str(p.relative_to(ROOT)))
-    st.download_button('下载完整项目 ZIP', buf.getvalue(), 'legal_assistant.zip', 'application/zip')
+    st.download_button('下载完整项目 ZIP', build_project_zip(ROOT), 'legal_assistant.zip', 'application/zip')
 
 all_records = list(records.values())
 cols = st.columns(3)
@@ -107,3 +111,5 @@ if filtered:
         st.dataframe(pd.DataFrame(record['audit']), hide_index=True)
 else:
     st.info('请从左侧加载模拟样本或上传文件；已有资料时可调整筛选条件。')
+
+render_ai_panel(records[rid] if filtered else None, settings, principal, ROOT)

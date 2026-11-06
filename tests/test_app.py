@@ -4,7 +4,9 @@ from streamlit.testing.v1 import AppTest
 
 class AppTests(unittest.TestCase):
     def test_load_search_review_export_and_clear(self):
-        app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / 'app.py'), default_timeout=30).run()
+        app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / 'app.py'), default_timeout=30)
+        app.secrets['APP_MODE'] = 'local'
+        app.run()
         self.assertFalse(app.exception)
         app.sidebar.button[1].click().run()
         self.assertFalse(app.exception)
