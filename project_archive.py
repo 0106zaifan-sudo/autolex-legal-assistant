@@ -4,6 +4,9 @@ import io
 import zipfile
 
 SOURCE_FILES = (
+    'document_parser.py', 'case_schema.py', 'case_store.py', 'evidence.py', 'case_ui.py',
+    'tests/test_document_parser.py', 'tests/test_case_store.py', 'tests/test_case_ui.py',
+    'docs/CASE_STRUCTURE_COVERAGE.md',
     'app.py', 'core.py', 'ai_analysis.py', 'ai_ui.py', 'security.py', 'project_archive.py',
     'requirements.txt', 'README.md', 'TEST_REPORT.md', 'PHASE2_ACCEPTANCE.md',
     'make_samples.py', 'make_ai_samples.py', '.gitignore', '.streamlit/config.toml',

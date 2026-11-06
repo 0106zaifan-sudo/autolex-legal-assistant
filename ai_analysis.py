@@ -9,10 +9,10 @@ import re
 from pydantic import BaseModel, ConfigDict, Field
 from openai import OpenAI, APIConnectionError, APITimeoutError, AuthenticationError, RateLimitError, APIStatusError
 from security import SecurityError
+from document_parser import PARSER_VERSION
 
 SCHEMA_VERSION = '2.0'
 PROMPT_VERSION = 'evidence-binding-v2'
-PARSER_VERSION = 'core.read_units/v1'
 SECTIONS = ('facts', 'timeline', 'issues', 'pending_evidence')
 
 MAX_INPUT_CHARS = 24000
@@ -74,7 +74,7 @@ class TimelineItem(Item):
 class Analysis(StrictModel):
     schema_version: Literal['2.0']
     prompt_version: Literal['evidence-binding-v2']
-    parser_version: Literal['core.read_units/v1']
+    parser_version: Literal['core.read_units/v2-coverage']
     document_sha256: str = Field(pattern=r'^[0-9a-f]{64}$')
     parsed_text_sha256: str = Field(pattern=r'^[0-9a-f]{64}$')
     facts: list[Item] = Field(max_length=12)
@@ -85,6 +85,8 @@ class Analysis(StrictModel):
 
 def analysis_context(record):
     """本次解析文本快照；文件/文本/解析版本必须同时匹配，不迁就旧分析。"""
+    if record.get('parser_version') != PARSER_VERSION:
+        raise AIError('解析版本已变更或未记录，请重新读取原文件，不能复用旧解析快照。')
     snapshot = json.dumps(record['units'], ensure_ascii=False, sort_keys=True, separators=(',', ':'))
     return {'schema_version': SCHEMA_VERSION, 'prompt_version': PROMPT_VERSION,
             'parser_version': PARSER_VERSION, 'document_sha256': record['文件SHA256'],
@@ -290,12 +292,17 @@ def validate_analysis(parsed, record, sources):
     return result
 
 
-def analyze_record(record, settings, store, principal, consent=False, client_factory=OpenAI):
+def analyze_record(record, settings, store, principal, consent=False, client_factory=OpenAI, *, coverage_acknowledged=False):
     disabled = settings.ai_disabled_reason(principal)
     if disabled:
         raise AIError(disabled)
     if not consent:
         raise AIError('请先确认有权将当前资料正文发送至 OpenAI API。')
+    report = record.get('parse_report', {})
+    if report.get('status') in ('failed', 'rejected'):
+        raise AIError('文件解析失败，不能进行 AI 分析。')
+    if report.get('requires_acknowledgement') and not coverage_acknowledged:
+        raise AIError('解析覆盖不完整或未核验，请先查看解析报告并确认仅分析已读取范围。')
     sources = build_sources(record)
     # 所有权限/输入检查完成后才扣额度及访问 API；失败调用也计入额度。
     lease = store.reserve_ai(settings, principal)
@@ -310,7 +317,10 @@ def analyze_record(record, settings, store, principal, consent=False, client_fac
         if response.status != 'completed' or response.output_parsed is None:
             raise AIError('模型拒绝、输出不完整或未返回结构化结果；未保存分析，请人工核验。')
         result = validate_analysis(response.output_parsed, record, sources)
-        result.update(model=settings.model, generated_at=datetime.now(ZoneInfo('Asia/Shanghai')).isoformat(timespec='seconds'),
+        result.update(parse_scope={'status': report.get('status', 'not_recorded'),
+                                   'coverage_acknowledged': coverage_acknowledged,
+                                   'limitations': report.get('limitations', [])},
+                      model=settings.model, generated_at=datetime.now(ZoneInfo('Asia/Shanghai')).isoformat(timespec='seconds'),
                       mode='AI生成（待人工核验）')
         return result
     except AIError:

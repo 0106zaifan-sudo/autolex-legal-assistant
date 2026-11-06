@@ -3,17 +3,14 @@ from __future__ import annotations
 import hashlib
 import io
 import re
-import zipfile
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from pathlib import Path
 import pandas as pd
-from docx import Document
-from pypdf import PdfReader
+from document_parser import MAX_BYTES, PARSER_VERSION, DocumentParseError, read_with_report
 
 FIELDS = ('法院', '案号', '争议焦点', '法律依据')
 PENDING = '待人工核验'
-MAX_BYTES = 20 * 1024 * 1024
 PATTERNS = {
     '法院': r'(?:[\u4e00-\u9fff]{2,30}?人民法院)',
     '案号': r'[（(]\d{4}[）)][\u4e00-\u9fffA-Za-z0-9]{1,24}号',
@@ -23,39 +20,13 @@ PATTERNS = {
 
 
 def read_units(name: str, data: bytes) -> list[dict]:
-    if len(data) > MAX_BYTES:
-        raise ValueError('单文件不能超过 20 MB')
-    suffix = Path(name).suffix.lower()
-    if suffix == '.pdf':
-        reader = PdfReader(io.BytesIO(data))
-        if reader.is_encrypted:
-            raise ValueError('加密 PDF 暂不支持，请先提供可读取版本')
-        if len(reader.pages) > 300:
-            raise ValueError('MVP 单份 PDF 最多 300 页')
-        return [{'location': f'PDF 第 {i} 页', 'text': p.extract_text() or ''}
-                for i, p in enumerate(reader.pages, 1)]
-    if suffix == '.docx':
-        with zipfile.ZipFile(io.BytesIO(data)) as z:
-            if sum(x.file_size for x in z.infolist()) > 80 * 1024 * 1024:
-                raise ValueError('DOCX 解压后过大，拒绝处理')
-        doc = Document(io.BytesIO(data))
-        # 正文段落和表格按实际文档顺序遍历；不处理页眉、批注、文本框。
-        units, paragraph, table = [], 0, 0
-        for block in doc.iter_inner_content():
-            if hasattr(block, 'rows'):
-                table += 1
-                for ri, row in enumerate(block.rows, 1):
-                    for ci, cell in enumerate(row.cells, 1):
-                        units.append({'location': f'DOCX 表 {table} 行 {ri} 列 {ci}', 'text': cell.text})
-            else:
-                paragraph += 1
-                units.append({'location': f'DOCX 正文第 {paragraph} 段', 'text': block.text})
-        return units
-    raise ValueError('只支持 PDF 和 DOCX')
+    """兼容旧接口；失败异常同时携带结构化解析报告。"""
+    return read_with_report(name, data).units
 
 
 def extract(name: str, data: bytes) -> dict:
-    units = read_units(name, data)
+    parsed = read_with_report(name, data)
+    units = parsed.units
     candidates = []
     for field, pattern in PATTERNS.items():
         for unit in units:
@@ -78,10 +49,13 @@ def extract(name: str, data: bytes) -> dict:
         warnings.append('未读取到正文：可能为扫描件或空文件。此版本不含 OCR，请人工检查。')
     elif suffix_pdf(name) and any(not u['text'].strip() for u in units):
         warnings.append('存在未读取到文字的 PDF 页，请人工检查扫描页。')
+    warnings.extend(i['message'] for i in parsed.report['issues'])
+    warnings = list(dict.fromkeys(warnings))
     return {'id': hashlib.sha256(name.encode() + b'\0' + data).hexdigest(),
             '文件名': Path(name).name, '文件SHA256': hashlib.sha256(data).hexdigest(),
             '数据类型': '模拟数据（非真实案件）' if simulated else '用户上传（真实性未核验）',
-            'units': units, 'candidates': candidates, 'warnings': warnings, 'audit': []}
+            'units': units, 'candidates': candidates, 'warnings': warnings, 'audit': [],
+            'original_bytes': bytes(data), 'parser_version': PARSER_VERSION, 'parse_report': parsed.report}
 
 
 def suffix_pdf(name):

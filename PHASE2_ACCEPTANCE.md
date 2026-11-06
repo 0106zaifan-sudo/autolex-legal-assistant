@@ -87,3 +87,7 @@ PYTHONPATH=/workspace/work/phase2_deps:/workspace/work/python_deps python -m str
 ## P0-A 补丁补充验收
 
 本分支的事件/时间/出处绑定已经升级至Schema 2.0，固定模拟响应同步迁移。旧Schema不自动升级为可信数据，需重新分析。API请求除正文外包含文件SHA256、解析文本SHA256及契约版本用于绑定校验，不发送文件名。具体回归结果见 `docs/EVIDENCE_BINDING_PATCH.md`；界面没有变更，没有调用真实付费API或部署。
+
+## 案件结构与解析覆盖补充验收
+
+当前开发分支为`feature/case-structure-parse-coverage`，继承证据绑定修复，解析版本为`core.read_units/v2-coverage`。新流程详见`docs/CASE_STRUCTURE_COVERAGE.md`：创建案件后明确选择文档、查看报告、保存证据摘录、核验及导出；原件与其他案件互相隔离。缺失保持null，规则和AI不会自动成为已确认事实。解析范围确认复用原发送确认框，后端额外检查，旧界面主要操作与原68项测试保留。

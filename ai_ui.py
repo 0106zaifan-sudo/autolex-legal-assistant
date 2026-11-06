@@ -100,14 +100,21 @@ def render_ai_panel(record, settings, principal, root):
     if st.session_state.get('_ai_selected_record') != selected_id:
         st.session_state['ai_consent'] = False
         st.session_state['_ai_selected_record'] = selected_id
-    consent = st.checkbox('我确认有权将所选资料正文发送至 OpenAI API，已完成必要脱敏。', key='ai_consent')
+    coverage_needed = bool(record and record.get('parse_report', {}).get('requires_acknowledgement'))
+    if coverage_needed:
+        st.warning('解析报告有未读取或未核验区域。下方确认同时表示仅分析已读取文本，其他区域仍需人工检查。')
+    consent_label = '我确认有权将所选资料正文发送至 OpenAI API，已完成必要脱敏。'
+    if coverage_needed:
+        consent_label += '我已查看解析报告，并确认仅分析已读取范围。'
+    consent = st.checkbox(consent_label, key='ai_consent')
+    coverage_ack = consent if coverage_needed else True
     disabled = bool(reason) or record is None or not consent
     if st.button('分析当前资料', disabled=disabled, key='run_ai'):
         # 每次都重新执行后端权限、额度、输入、输出检查，不能依赖按钮禁用。
         st.session_state.pop('_ai_result', None)
         try:
             with st.spinner('正在分析并核对引证…'):
-                result = analyze_record(record, settings, QuotaStore(settings.db_path), principal, consent)
+                result = analyze_record(record, settings, QuotaStore(settings.db_path), principal, consent, coverage_acknowledged=coverage_ack)
             st.session_state['_ai_result'] = {'record_id': record['id'], 'value': result}
         except (AIError, SecurityError) as exc:
             st.error(str(exc))

@@ -1,10 +1,13 @@
 from pathlib import Path
+import hashlib
 import pandas as pd
 import streamlit as st
 from core import FIELDS, PENDING, extract, summary, search, review, export_excel
 from ai_ui import enforce_access, load_settings, render_ai_panel
 from security import SecurityError
 from project_archive import build_project_zip
+from case_ui import render_case_workspace, render_parse_report
+from document_parser import DocumentParseError
 
 ROOT = Path(__file__).parent
 st.set_page_config(page_title='智能网联汽车法律资料助手', page_icon='⚖️', layout='wide')
@@ -30,6 +33,11 @@ def add_file(name, data):
         else:
             records[r['id']] = r
             st.success(f'已读取：{name}')
+    except DocumentParseError as exc:
+        failures = st.session_state.setdefault('_parse_failures', {})
+        fid = hashlib.sha256(name.encode()+b'\0'+data).hexdigest()
+        failures[fid] = {'name': name, 'data': bytes(data), 'report': exc.report}
+        st.error(f'{name}：解析失败，已保留解析报告，可人工核对。')
     except Exception as exc:
         st.error(f'{name}：读取失败（{type(exc).__name__}）。请检查文件是否损坏、加密、超限或格式错误。')
 
@@ -49,6 +57,8 @@ with st.sidebar:
         records.clear()
         st.session_state.pop('_ai_result', None)
         st.session_state.pop('_show_ai_demo', None)
+        st.session_state.pop('_case_store', None)
+        st.session_state.pop('_parse_failures', None)
         st.rerun()
     st.divider()
     st.caption('代码、样本和使用文档可下载，解压后在自己的电脑运行。')
@@ -107,9 +117,21 @@ if filtered:
             st.caption('字符区间使用解析文本的零起点、左闭右开区间。DOCX 段落编号不等于 Word 页码；PDF 页码是文件物理页序。')
         else:
             st.warning('没有可读取的正文单元。')
+    with st.expander('解析覆盖检查与报告'):
+        if 'parse_report' in record:
+            render_parse_report(record['parse_report'], 'record_parse_report_'+rid)
+        else:
+            st.warning('该记录来自旧解析版本，请重新上传原文件生成覆盖报告；不能复用旧快照。')
     with st.expander('核验日志'):
         st.dataframe(pd.DataFrame(record['audit']), hide_index=True)
 else:
     st.info('请从左侧加载模拟样本或上传文件；已有资料时可调整筛选条件。')
 
 render_ai_panel(records[rid] if filtered else None, settings, principal, ROOT)
+
+if st.session_state.get('_parse_failures'):
+    with st.expander('读取失败文件的解析报告'):
+        for fid, failed in st.session_state['_parse_failures'].items():
+            st.text(failed['name'])
+            render_parse_report(failed['report'], 'failed_report_'+fid)
+render_case_workspace(records, ROOT)

@@ -1,7 +1,7 @@
 {
   "schema_version": "2.0",
   "prompt_version": "evidence-binding-v2",
-  "parser_version": "core.read_units/v1",
+  "parser_version": "core.read_units/v2-coverage",
   "document_sha256": "7d04f7cbe903269618e9a793480c48345bdf381b09e91d6bc6f57b0f3e92411e",
   "parsed_text_sha256": "07a50a452ab02306d12eac5a5f43b0cfbe8c702c5f479da6de05255b9140be38",
   "facts": [

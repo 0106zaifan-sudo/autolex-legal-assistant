@@ -1,3 +1,13 @@
+# 最新：案件结构化与文档解析覆盖测试
+
+2026-11-06（北京时间）；分支`feature/case-structure-parse-coverage`；父提交`68f097a`。
+
+**113项测试通过，9.505秒。** 包含原68项未改动回归及新增45项（解析17、案件存储23、案件页面5）。未调用真实付费API，未执行生产部署。详细说明见`docs/CASE_STRUCTURE_COVERAGE.md`，完整日志见`docs/case_structure_coverage_test_run.txt`。
+
+以下保留旧阶段历史报告，数量/耗时不代表本次运行。
+
+---
+
 # 最新：P0-A 证据绑定补丁测试
 
 日期：2026-11-06（北京时间）；分支：`feature/fix-evidence-binding`，基于AI分支`5307554`。
