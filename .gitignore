@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.pyc
+
+# Local credentials and runtime artifacts
+.env
+.env.*
+.streamlit/secrets.toml
+credentials.json
+*.pem
+*.key
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.DS_Store
+Thumbs.db
