@@ -1,3 +1,15 @@
+# 最新：P0真实模型验收准备阶段（无密钥）
+
+2026-11-06（北京时间），分支`feature/live-ai-acceptance`，父提交`267de0b`。
+
+**135项离线测试通过，13.250秒**，包含原113项及新增22项。原113项测试文件未修改。子进程总截止、累计预算、官方SDK严格Schema及元数据处理、模拟材料和准备/认证边界均做离线验证。没有真实模型调用；测试中的mock模型标识和token数字不是实际模型验收结果。
+
+真实状态：两份模拟材料均not_run，provider model/token未知，准确率未测。见`docs/LIVE_AI_ACCEPTANCE_STATUS.json`、`docs/LIVE_AI_ACCEPTANCE.md`及完整日志`docs/live_acceptance_offline_tests.txt`。
+
+以下保留历史报告，不代表当前最新测试数量或真实AI验收已通过。
+
+---
+
 # 最新：案件结构化与文档解析覆盖测试
 
 2026-11-06（北京时间）；分支`feature/case-structure-parse-coverage`；父提交`68f097a`。

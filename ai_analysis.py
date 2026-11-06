@@ -4,12 +4,16 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import Literal
 import hashlib
+import time
+import uuid
+from importlib.metadata import version
 import json
 import re
 from pydantic import BaseModel, ConfigDict, Field
 from openai import OpenAI, APIConnectionError, APITimeoutError, AuthenticationError, RateLimitError, APIStatusError
 from security import SecurityError
 from document_parser import PARSER_VERSION
+from model_runtime import invoke, ModelRuntimeError
 
 SCHEMA_VERSION = '2.0'
 PROMPT_VERSION = 'evidence-binding-v2'
@@ -44,7 +48,10 @@ time_precision只能为date、minute、second或unknown；必须与原文相符�
 
 
 class AIError(ValueError):
-    pass
+    def __init__(self,message,*,code='validation_rejected',receipt=None):
+        self.code=code
+        self.receipt=receipt
+        super().__init__(message)
 
 
 class StrictModel(BaseModel):
@@ -292,49 +299,92 @@ def validate_analysis(parsed, record, sources):
     return result
 
 
-def analyze_record(record, settings, store, principal, consent=False, client_factory=OpenAI, *, coverage_acknowledged=False):
-    disabled = settings.ai_disabled_reason(principal)
-    if disabled:
-        raise AIError(disabled)
-    if not consent:
-        raise AIError('请先确认有权将当前资料正文发送至 OpenAI API。')
-    report = record.get('parse_report', {})
-    if report.get('status') in ('failed', 'rejected'):
-        raise AIError('文件解析失败，不能进行 AI 分析。')
+def prepare_request(record, settings):
+    sources=build_sources(record)
+    data=json.dumps({'context':analysis_context(record),
+                     'sources':[{'source_id':s['source_id'],'text':s['text']} for s in sources]},ensure_ascii=False)
+    request={'model':settings.model,'instructions':PROMPT,'input':data,
+             'text':{'format':{'type':'json_schema','name':'Analysis','strict':True,'schema':Analysis.model_json_schema()}},
+             'max_output_tokens':MAX_OUTPUT_TOKENS,'store':False,'truncation':'disabled'}
+    # 完整请求编码量+固定余量是保守输入预算，不冒充实际token数。
+    budget={'input_chars':sum(len(s['text']) for s in sources),
+            'request_bytes':len(json.dumps(request,ensure_ascii=False,separators=(',',':')).encode())+1024}
+    if budget['request_bytes']>settings.max_request_bytes:
+        raise AIError('本次完整请求超过输入预算，未发送内容。',code='request_budget_exceeded')
+    return sources,request,budget
+
+
+RUNTIME_MESSAGES={
+    'authentication_failed':'AI 服务认证失败，请管理员检查 Secrets；未显示凭据。',
+    'rate_limited':'AI 服务额度不足或请求受限，请稍后再试。',
+    'network_timeout':'AI 服务连接失败或超时，请稍后再试。',
+    'connection_failed':'AI 服务连接失败或超时，请稍后再试。',
+    'deadline_exceeded':'AI 调用超过总截止时间，本地请求进程已停止；服务端是否计费未知，请勿自动重试。',
+}
+
+
+def analyze_record(record, settings, store, principal, consent=False, client_factory=None, *, coverage_acknowledged=False):
+    disabled=settings.ai_disabled_reason(principal)
+    if disabled:raise AIError(disabled,code='disabled')
+    if not consent:raise AIError('请先确认有权将当前资料正文发送至 OpenAI API。',code='consent_required')
+    report=record.get('parse_report',{})
+    if report.get('status') in ('failed','rejected'):
+        raise AIError('文件解析失败，不能进行 AI 分析。',code='parse_failed')
     if report.get('requires_acknowledgement') and not coverage_acknowledged:
-        raise AIError('解析覆盖不完整或未核验，请先查看解析报告并确认仅分析已读取范围。')
-    sources = build_sources(record)
-    # 所有权限/输入检查完成后才扣额度及访问 API；失败调用也计入额度。
-    lease = store.reserve_ai(settings, principal)
+        raise AIError('解析覆盖不完整或未核验，请先查看解析报告并确认仅分析已读取范围。',code='coverage_confirmation_required')
+    if (report.get('file_sha256')!=record['文件SHA256']
+            or report.get('parser_version')!=record.get('parser_version')):
+        raise AIError('解析报告不属于当前文件或版本，请重新读取。',code='coverage_mismatch')
+    sources,request,budget=prepare_request(record,settings)
+    lease=store.reserve_ai(settings,principal,**budget)
+    started=time.monotonic()
+    receipt={'run_id':uuid.uuid4().hex,'execution_mode':'live_sdk' if client_factory is None else 'injected_test_client',
+             'requested_model':settings.model,'provider_model':None,'provider_response_id':None,
+             'sdk_version':version('openai'),'started_at':datetime.now(ZoneInfo('Asia/Shanghai')).isoformat(timespec='seconds'),
+             'call_status':'not_started','provider_status':None,'token_usage':None,
+             'usage_status':'unavailable','validation_status':'not_run',
+             'input_budget':budget,'file_sha256':record['文件SHA256'],**analysis_context(record)}
     try:
-        with client_factory(api_key=settings.api_key, base_url='https://api.openai.com/v1',
-                            timeout=30.0, max_retries=0) as client:
-            response = client.responses.parse(
-                model=settings.model, instructions=PROMPT,
-                input=json.dumps({'context': analysis_context(record), 'sources': [{'source_id': s['source_id'], 'text': s['text']} for s in sources]}, ensure_ascii=False),
-                text_format=Analysis, max_output_tokens=MAX_OUTPUT_TOKENS, store=False,
-                truncation='disabled')
-        if response.status != 'completed' or response.output_parsed is None:
-            raise AIError('模型拒绝、输出不完整或未返回结构化结果；未保存分析，请人工核验。')
-        result = validate_analysis(response.output_parsed, record, sources)
-        result.update(parse_scope={'status': report.get('status', 'not_recorded'),
-                                   'coverage_acknowledged': coverage_acknowledged,
-                                   'limitations': report.get('limitations', [])},
-                      model=settings.model, generated_at=datetime.now(ZoneInfo('Asia/Shanghai')).isoformat(timespec='seconds'),
-                      mode='AI生成（待人工核验）')
+        try:
+            response=invoke(settings.api_key,request,settings.total_timeout,client_factory)
+        except ModelRuntimeError as exc:
+            receipt.update(exc.metadata)
+            raise AIError(RUNTIME_MESSAGES.get(exc.code,'AI 工作进程异常，实际调用状态未知。'),code=exc.code) from None
+        receipt.update({key:response.get(key) for key in ('call_status','provider_status','provider_model','provider_response_id','token_usage')})
+        receipt['usage_status']='provider_reported' if response.get('token_usage') is not None else 'unavailable'
+        if response.get('error_code'):
+            code=response['error_code'];receipt['http_status']=response.get('http_status')
+            raise AIError(RUNTIME_MESSAGES.get(code,'AI 服务暂不可用，请稍后再试。'),code=code)
+        if response.get('provider_status')!='completed' or response.get('refused'):
+            raise AIError('模型拒绝或输出不完整；未保存分析，请人工核验。',code='refused_or_incomplete')
+        try:
+            parsed=Analysis.model_validate_json(response.get('output_text',''))
+        except (ValueError,TypeError):
+            receipt.update(validation_status='failed',validation_error_kind='schema')
+            raise AIError('AI 输出结构校验失败，未保存分析；调用元数据仍已记录。',code='output_validation_failed') from None
+        try:
+            result=validate_analysis(parsed,record,sources)
+        except AIError as exc:
+            receipt.update(validation_status='failed',validation_error_kind='evidence_binding',validation_detail=str(exc))
+            raise AIError('AI 引证或时间绑定校验失败，未保存分析；调用元数据仍已记录。',code='output_validation_failed') from None
+        receipt['validation_status']='passed'
+        receipt['duration_ms']=round((time.monotonic()-started)*1000)
+        result.update(parse_scope={'status':report.get('status','not_recorded'),
+                                   'coverage_acknowledged':coverage_acknowledged,'limitations':report.get('limitations',[])},
+                      model=settings.model,generated_at=datetime.now(ZoneInfo('Asia/Shanghai')).isoformat(timespec='seconds'),
+                      mode='AI生成（待人工核验）',call_receipt=receipt)
         return result
-    except AIError:
+    except KeyboardInterrupt:
+        receipt.update(error_code='cancelled',call_status='unknown',duration_ms=round((time.monotonic()-started)*1000))
+        raise AIError('调用已取消，服务商处理及计费状态可能未知；不会自动重试。',code='cancelled',receipt=receipt) from None
+    except AIError as exc:
+        receipt['error_code']=exc.code
+        receipt['duration_ms']=round((time.monotonic()-started)*1000)
+        exc.receipt=receipt
         raise
-    except AuthenticationError:
-        raise AIError('AI 服务认证失败，请管理员检查 Secrets；未显示凭据。') from None
-    except RateLimitError:
-        raise AIError('AI 服务额度不足或请求受限，请稍后再试。') from None
-    except (APITimeoutError, APIConnectionError):
-        raise AIError('AI 服务连接失败或超时，请稍后再试。') from None
-    except APIStatusError:
-        raise AIError('AI 服务暂不可用，请稍后再试。') from None
     except Exception:
-        # 不将 SDK 异常、响应体、正文或密钥交给页面/应用日志。
-        raise AIError('AI 输出格式或服务处理异常，未保存结果，请人工核验。') from None
+        receipt.update(error_code='processing_failed',call_status='unknown',duration_ms=round((time.monotonic()-started)*1000))
+        raise AIError('AI 处理异常，未保存结果；请人工核验。',code='processing_failed',receipt=receipt) from None
     finally:
+        # 默认worker已结束/终止后才释放并发锁；失败不返还次数和累计预算。
         store.release(lease)

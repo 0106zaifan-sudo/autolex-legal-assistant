@@ -112,11 +112,14 @@ def render_ai_panel(record, settings, principal, root):
     if st.button('分析当前资料', disabled=disabled, key='run_ai'):
         # 每次都重新执行后端权限、额度、输入、输出检查，不能依赖按钮禁用。
         st.session_state.pop('_ai_result', None)
+        st.session_state.pop('_last_ai_receipt', None)
         try:
             with st.spinner('正在分析并核对引证…'):
                 result = analyze_record(record, settings, QuotaStore(settings.db_path), principal, consent, coverage_acknowledged=coverage_ack)
             st.session_state['_ai_result'] = {'record_id': record['id'], 'value': result}
+            st.session_state['_last_ai_receipt'] = result.get('call_receipt')
         except (AIError, SecurityError) as exc:
+            st.session_state['_last_ai_receipt'] = getattr(exc, 'receipt', None)
             st.error(str(exc))
         except Exception:
             st.error('分析暂不可用，未保存结果，请联系管理员。')
@@ -129,3 +132,10 @@ def render_ai_panel(record, settings, principal, root):
             st.session_state['_show_ai_demo'] = True
         if st.session_state.get('_show_ai_demo'):
             render_result(demo_analysis(root), 'download_ai_demo')
+
+    receipt=st.session_state.get('_last_ai_receipt')
+    if receipt:
+        with st.expander('最近一次模型调用记录（错误也保留，未知用量不填零）'):
+            st.json(receipt)
+            st.download_button('下载调用记录 JSON',json.dumps(receipt,ensure_ascii=False,indent=2),
+                               'AutoLex_模型调用记录.json','application/json',key='download_ai_receipt')

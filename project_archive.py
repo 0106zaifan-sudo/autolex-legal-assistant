@@ -4,6 +4,11 @@ import io
 import zipfile
 
 SOURCE_FILES = (
+    'model_runtime.py', 'live_acceptance.py', 'make_acceptance_samples.py',
+    'tools/run_live_acceptance.py', 'tests/test_live_acceptance.py',
+    'acceptance_samples/模拟_接管提示争议.docx', 'acceptance_samples/模拟_时间缺失与日志核验.docx',
+    'acceptance_samples/manifest.json', 'docs/LIVE_AI_ACCEPTANCE.md',
+    'docs/LIVE_AI_ACCEPTANCE_STATUS.json', 'docs/live_acceptance_offline_tests.txt',
     'document_parser.py', 'case_schema.py', 'case_store.py', 'evidence.py', 'case_ui.py',
     'tests/test_document_parser.py', 'tests/test_case_store.py', 'tests/test_case_ui.py',
     'docs/CASE_STRUCTURE_COVERAGE.md',

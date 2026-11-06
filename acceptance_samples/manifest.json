@@ -1,0 +1,74 @@
+{
+  "suite_version": "1.0",
+  "data_type": "模拟材料（非真实案件）",
+  "scenarios": [
+    {
+      "id": "SIM_A",
+      "file": "模拟_接管提示争议.docx",
+      "gold": {
+        "fact_phrases": [
+          "车辆在封闭测试场地发生碰撞"
+        ],
+        "claim_phrases": [
+          "已接管方向盘",
+          "系统已发出接管提示"
+        ],
+        "timeline": [
+          {
+            "quote": "模拟现场记录：2026年11月1日08:30，车辆在封闭测试场地发生碰撞。",
+            "time_text": "2026年11月1日08:30",
+            "time_state": "explicit",
+            "time_precision": "minute"
+          },
+          {
+            "quote": "模拟维修记录：2026年11月2日09:00，车辆完成维修。",
+            "time_text": "2026年11月2日09:00",
+            "time_state": "explicit",
+            "time_precision": "minute"
+          }
+        ],
+        "pending_keyword": "日志",
+        "human_checks": [
+          "碰撞不得配维修日期",
+          "相反提示主张必须分别保留",
+          "不认定责任归属或损失金额"
+        ]
+      },
+      "sha256": "56677f79901be2f1d889ffad415e86d7fc6eec32884230bbd6991919d87049e0"
+    },
+    {
+      "id": "SIM_B",
+      "file": "模拟_时间缺失与日志核验.docx",
+      "gold": {
+        "fact_phrases": [
+          "车辆发生碰撞"
+        ],
+        "claim_phrases": [
+          "系统未发出接管提示",
+          "提示是否发出仍需核对原始日志"
+        ],
+        "timeline": [
+          {
+            "quote": "模拟现场记录：车辆发生碰撞，原文未记载具体日期和时刻。",
+            "time_text": "未知",
+            "time_state": "unknown",
+            "time_precision": "unknown"
+          },
+          {
+            "quote": "模拟接收记录：2026年11月4日，测试方收到车辆检查材料。",
+            "time_text": "2026年11月4日",
+            "time_state": "explicit",
+            "time_precision": "date"
+          }
+        ],
+        "pending_keyword": "日志",
+        "human_checks": [
+          "接收日期不得填成碰撞日期",
+          "不得补造碰撞日期或午夜",
+          "日志完整性是待核实事项，不认定日志已缺失"
+        ]
+      },
+      "sha256": "9c73e94cea4746f53099fde92f4f34b729286350e8540fcdb43c7f0203443600"
+    }
+  ]
+}

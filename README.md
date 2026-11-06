@@ -124,7 +124,7 @@ python -m unittest discover -s tests -v
 
 完整步骤见 [PHASE2_ACCEPTANCE.md](PHASE2_ACCEPTANCE.md)。最小公开配置需要 `APP_MODE="public"`、`APP_PASSWORD_HASH`，没有密码哈希会锁定全部资料功能；AI 另外需要 `OPENAI_API_KEY`、`AI_SINGLE_INSTANCE=true` 和可写的 SQLite 存储。仅从 Streamlit Secrets 读取密钥，不使用环境变量回退，也不提供网页密钥输入框。
 
-生成访问密码哈希：`python tools/hash_password.py`，在自己的终端交互输入密码；只把生成的哈希写入 Secrets，不提交密码、哈希或实际 Secrets 文件。官方 SDK 使用固定官方 API 地址、30秒超时、关闭自动重试、`store=False`、输入24000字符/80块及输出4000 token上限。`store=False` 不等于服务商零保留承诺。默认模型为 `gpt-4.1-mini`，管理员可在 Secrets 变更；实际可用性和费用取决于 API 账户。
+生成访问密码哈希：`python tools/hash_password.py`，在自己的终端交互输入密码；只把生成的哈希写入 Secrets，不提交密码、哈希或实际 Secrets 文件。官方 SDK 使用固定官方 API 地址、SDK阶段30秒及默认45秒进程总截止、关闭自动重试、`store=False`、输入24000字符/80块及输出4000 token上限。`store=False` 不等于服务商零保留承诺。默认模型为 `gpt-4.1-mini`，管理员可在 Secrets 变更；实际可用性和费用取决于 API 账户。
 
 ## P0-A 证据绑定补丁（Schema 2.0）
 
@@ -139,3 +139,9 @@ python -m unittest discover -s tests -v
 原件仅保存在会话内存，可按案件下载；案件JSON保留哈希、原文位置及复核记录，不内嵌原始文件字节。PDF逐页、DOCX逐段及单元格生成解析报告；PDF视觉表格始终标明完整性未核验。未覆盖范围不能当作没有证据。解析版本升级至`core.read_units/v2-coverage`，旧记录需重新读取。
 
 完整流程、113项实际测试及剩余限制见 [案件结构与解析覆盖说明](docs/CASE_STRUCTURE_COVERAGE.md)。当前不提供案件JSON恢复导入、OCR、真实材料真实性核验或公开多租户能力。
+
+## P0真实模型验收准备（尚未真实调用）
+
+分支`feature/live-ai-acceptance`基于案件结构分支。新增累计输入预算、默认真实调用进程总截止、服务端模型/usage及失败校验的调用记录，并准备两份固定模拟事故材料。
+
+`python tools/run_live_acceptance.py`默认仅准备，不读Secrets、不调用模型。当前真实尝试0次，模型返回和token均未获得。安全配置、本人终端认证和显式费用确认后才能运行两份真实验收；详见 [真实验收准备与安全配置步骤](docs/LIVE_AI_ACCEPTANCE.md)。不要在聊天发送密钥或密码，不把mock当真实效果。

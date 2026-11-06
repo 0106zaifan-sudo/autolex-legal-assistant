@@ -56,6 +56,7 @@ with st.sidebar:
     if st.button('清空本会话资料', width='stretch'):
         records.clear()
         st.session_state.pop('_ai_result', None)
+        st.session_state.pop('_last_ai_receipt', None)
         st.session_state.pop('_show_ai_demo', None)
         st.session_state.pop('_case_store', None)
         st.session_state.pop('_parse_failures', None)
