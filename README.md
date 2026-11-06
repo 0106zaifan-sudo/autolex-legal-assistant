@@ -1,6 +1,6 @@
 # 智能网联汽车法律资料整理与检索助手
 
-面向法学及司法鉴定研究生的 AI 法务实习演示项目。第二阶段基线：`feature/ai-case-facts`；P0证据绑定补丁：`feature/fix-evidence-binding`；本轮案件/解析覆盖分支：`feature/case-structure-parse-coverage`。原有 PDF/DOCX 解析、规则提取、检索与 Excel 导出保持离线；新增可选的 OpenAI 官方 SDK 案件事实分析。AI 需要单独配置 Secrets、登录并确认发送资料，可能产生 API 费用。未配置密钥时禁用 AI，不用模拟结果冒充模型输出。
+面向法学及司法鉴定研究生的 AI 法务实习演示项目。第二阶段基线：`feature/ai-case-facts`；P0证据绑定补丁：`feature/fix-evidence-binding`；本轮案件/解析覆盖分支：`feature/case-structure-parse-coverage`。原有 PDF/DOCX 解析、规则提取、检索与 Excel 导出保持离线；新增可选的 OpenAI 官方 SDK 案件事实分析，并支持OpenAI/DeepSeek官方Responses接口切换。AI 需要单独配置 Secrets、登录并确认发送资料，可能产生 API 费用。未配置密钥时禁用 AI，不用模拟结果冒充模型输出。
 
 ## 架构与文件
 
@@ -122,9 +122,9 @@ python -m unittest discover -s tests -v
 
 ## AI 配置与第二阶段验收
 
-完整步骤见 [PHASE2_ACCEPTANCE.md](PHASE2_ACCEPTANCE.md)。最小公开配置需要 `APP_MODE="public"`、`APP_PASSWORD_HASH`，没有密码哈希会锁定全部资料功能；AI 另外需要 `OPENAI_API_KEY`、`AI_SINGLE_INSTANCE=true` 和可写的 SQLite 存储。仅从 Streamlit Secrets 读取密钥，不使用环境变量回退，也不提供网页密钥输入框。
+完整步骤见 [PHASE2_ACCEPTANCE.md](PHASE2_ACCEPTANCE.md)。最小公开配置需要 `APP_MODE="public"`、`APP_PASSWORD_HASH`，没有密码哈希会锁定全部资料功能；AI另外需要选定服务商的密钥、`AI_SINGLE_INSTANCE=true`和可写的SQLite存储。`AI_PROVIDER`支持`openai`或`deepseek`，分别读取`OPENAI_API_KEY`或`DEEPSEEK_API_KEY`；新模板推荐DeepSeek，旧配置缺省保持OpenAI。普通环境只从Streamlit Secrets读取；Codespaces可安全补入所选服务商同名Secret，不提供网页密钥输入框。详见[多服务商配置与Codespaces步骤](docs/MULTI_PROVIDER.md)。
 
-生成访问密码哈希：`python tools/hash_password.py`，在自己的终端交互输入密码；只把生成的哈希写入 Secrets，不提交密码、哈希或实际 Secrets 文件。官方 SDK 使用固定官方 API 地址、SDK阶段30秒及默认45秒进程总截止、关闭自动重试、`store=False`、输入24000字符/80块及输出4000 token上限。`store=False` 不等于服务商零保留承诺。默认模型为 `gpt-4.1-mini`，管理员可在 Secrets 变更；实际可用性和费用取决于 API 账户。
+生成访问密码哈希：`python tools/hash_password.py`，在自己的终端交互输入密码；只把生成的哈希写入 Secrets，不提交密码、哈希或实际 Secrets 文件。官方 SDK 使用固定官方 API 地址、SDK阶段30秒及默认45秒进程总截止、关闭自动重试、输入24000字符/80块及输出4000 token上限。OpenAI保留`store=False`和原有严格Schema；DeepSeek使用官方无状态Responses协议及文档列明的JSON Schema参数，不发送不支持的store/truncation。协议配置不等于服务商零保留承诺。OpenAI默认`gpt-4.1-mini`，DeepSeek默认`deepseek-flash`；实际可用性和费用取决于API账户，未进行真实调用。
 
 ## P0-A 证据绑定补丁（Schema 2.0）
 
@@ -145,3 +145,9 @@ python -m unittest discover -s tests -v
 分支`feature/live-ai-acceptance`基于案件结构分支。新增累计输入预算、默认真实调用进程总截止、服务端模型/usage及失败校验的调用记录，并准备两份固定模拟事故材料。
 
 `python tools/run_live_acceptance.py`默认仅准备，不读Secrets、不调用模型。当前真实尝试0次，模型返回和token均未获得。安全配置、本人终端认证和显式费用确认后才能运行两份真实验收；详见 [真实验收准备与安全配置步骤](docs/LIVE_AI_ACCEPTANCE.md)。不要在聊天发送密钥或密码，不把mock当真实效果。
+
+## 多模型API服务商（当前优先DeepSeek）
+
+开发分支`feature/multi-provider-deepseek`继承`feature/live-ai-acceptance`。服务商配置不改变案件结构、引文核验、解析覆盖确认和单实例共享限流；不同服务商不共用密钥、不自动切换。调用回执新增provider、端点及缓存/推理token对账记录，未知费用不填零。
+
+[完整配置、官方兼容性核对、Codespaces及SIM_A/SIM_B验收步骤](docs/MULTI_PROVIDER.md)。本轮仅完成离线工程验证，未执行真实付费调用，也未部署公开网页。最新测试结果见[TEST_REPORT.md](TEST_REPORT.md)。

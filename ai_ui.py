@@ -1,5 +1,7 @@
 """Streamlit 访问门禁和独立 AI 面板。任何付费请求仅由用户点击触发。"""
 import json
+import os
+from ai_providers import codespaces_values
 from pathlib import Path
 import streamlit as st
 from ai_analysis import AIError, Analysis, analyze_record, build_sources, validate_analysis
@@ -9,11 +11,14 @@ from security import QuotaStore, SecurityError, Settings, verify_password
 
 def load_settings():
     try:
-        # 不回退读取 os.environ；无 Secrets 的本地安装默认按公开模式关闭访问。
+        # 普通环境只读Secrets；Codespaces仅补入所选服务商的环境Secret。
         values = dict(st.secrets)
     except FileNotFoundError:
         values = {}
-    return Settings.from_secrets(values)
+    try:
+        return Settings.from_secrets(codespaces_values(values, os.environ))
+    except ValueError as exc:
+        raise SecurityError(str(exc)) from None
 
 
 def enforce_access(settings):
@@ -96,14 +101,16 @@ def render_ai_panel(record, settings, principal, root):
     reason = settings.ai_disabled_reason(principal)
     if reason:
         st.info(reason)
-    selected_id = record['id'] if record else None
+    selected_id = (record['id'] if record else None, settings.provider, settings.model)
     if st.session_state.get('_ai_selected_record') != selected_id:
         st.session_state['ai_consent'] = False
+        st.session_state.pop('_ai_result', None)
+        st.session_state.pop('_last_ai_receipt', None)
         st.session_state['_ai_selected_record'] = selected_id
     coverage_needed = bool(record and record.get('parse_report', {}).get('requires_acknowledgement'))
     if coverage_needed:
         st.warning('解析报告有未读取或未核验区域。下方确认同时表示仅分析已读取文本，其他区域仍需人工检查。')
-    consent_label = '我确认有权将所选资料正文发送至 OpenAI API，已完成必要脱敏。'
+    consent_label = f'我确认有权将所选资料正文发送至 {settings.provider_spec.label} API，已完成必要脱敏。'
     if coverage_needed:
         consent_label += '我已查看解析报告，并确认仅分析已读取范围。'
     consent = st.checkbox(consent_label, key='ai_consent')

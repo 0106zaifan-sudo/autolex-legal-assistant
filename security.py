@@ -1,4 +1,4 @@
-"""Secrets 配置、访问控制和 SQLite 原子额度。此模块不读取环境 API 密钥。"""
+"""所选服务商的Secrets配置、访问控制和SQLite原子额度；不自行读取环境。"""
 from __future__ import annotations
 from dataclasses import dataclass, field, replace
 from datetime import datetime
@@ -9,6 +9,7 @@ import hmac
 import secrets
 import sqlite3
 import time
+from ai_providers import get_provider
 
 
 class SecurityError(ValueError):
@@ -20,7 +21,7 @@ class Settings:
     api_key: str = field(default='', repr=False)
     password_hash: str = field(default='', repr=False)
     mode: str = 'public'
-    model: str = 'gpt-4.1-mini'
+    model: str = ''
     daily_limit: int = 20
     hourly_limit: int = 5
     cooldown: int = 30
@@ -32,9 +33,26 @@ class Settings:
     hourly_request_bytes: int = 256000
     max_request_bytes: int = 128000
     total_timeout: int = 45
+    provider: str = 'openai'
+
+    def __post_init__(self):
+        try:
+            spec = get_provider(self.provider)
+        except ValueError as exc:
+            raise SecurityError(str(exc)) from None
+        if not self.model:
+            object.__setattr__(self, 'model', spec.default_model)
+
+    @property
+    def provider_spec(self):
+        return get_provider(self.provider)
 
     @classmethod
     def from_secrets(cls, values):
+        try:
+            spec = get_provider(str(values.get('AI_PROVIDER', 'openai')))
+        except ValueError as exc:
+            raise SecurityError(str(exc)) from None
         mode = str(values.get('APP_MODE', 'public'))
         if mode not in ('public', 'local'):
             raise SecurityError('APP_MODE 必须为 public 或 local')
@@ -43,9 +61,9 @@ class Settings:
             if isinstance(value, bool) or not str(value).isdigit() or not 1 <= int(value) <= upper:
                 raise SecurityError(f'{name} 配置无效')
             return int(value)
-        settings = cls(api_key=str(values.get('OPENAI_API_KEY', '')).strip(),
+        settings = cls(api_key=str(values.get(spec.key_name, '')).strip(), provider=spec.name,
                        password_hash=str(values.get('APP_PASSWORD_HASH', '')).strip(), mode=mode,
-                       model=str(values.get('OPENAI_MODEL', 'gpt-4.1-mini')),
+                       model=str(values.get(spec.model_name, spec.default_model)),
                        daily_limit=bounded('AI_DAILY_LIMIT', 20, 100),
                        hourly_limit=bounded('AI_HOURLY_LIMIT', 5, 20),
                        cooldown=bounded('AI_COOLDOWN_SECONDS', 30, 3600),
@@ -61,8 +79,8 @@ class Settings:
             raise SecurityError('调用限制必须使用磁盘 SQLite 数据库')
         if settings.password_hash and not valid_password_hash(settings.password_hash):
             raise SecurityError('APP_PASSWORD_HASH 格式无效，请使用 tools/hash_password.py 生成')
-        if not settings.model or len(settings.model) > 100:
-            raise SecurityError('OPENAI_MODEL 配置无效')
+        if not str(values.get(spec.model_name, spec.default_model)).strip() or len(settings.model) > 100:
+            raise SecurityError(f'{spec.model_name} 配置无效')
         db=Path(settings.db_path)
         if not db.is_absolute():
             settings=replace(settings,db_path=str(Path(__file__).resolve().parent/db))
@@ -74,7 +92,7 @@ class Settings:
 
     def ai_disabled_reason(self, principal):
         if not self.api_key:
-            return '未在 Streamlit Secrets 配置 OPENAI_API_KEY，AI 功能已禁用。'
+            return f'未在安全配置中提供 {self.provider_spec.key_name}，AI 功能已禁用。'
         if not self.principal or principal != self.principal:
             return 'AI 调用需要配置访问密码并登录。'
         if self.mode == 'public' and not self.single_instance:

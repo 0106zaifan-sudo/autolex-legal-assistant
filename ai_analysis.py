@@ -14,6 +14,7 @@ from openai import OpenAI, APIConnectionError, APITimeoutError, AuthenticationEr
 from security import SecurityError
 from document_parser import PARSER_VERSION
 from model_runtime import invoke, ModelRuntimeError
+from ai_providers import adapt_request, billing_record
 
 SCHEMA_VERSION = '2.0'
 PROMPT_VERSION = 'evidence-binding-v2'
@@ -306,6 +307,7 @@ def prepare_request(record, settings):
     request={'model':settings.model,'instructions':PROMPT,'input':data,
              'text':{'format':{'type':'json_schema','name':'Analysis','strict':True,'schema':Analysis.model_json_schema()}},
              'max_output_tokens':MAX_OUTPUT_TOKENS,'store':False,'truncation':'disabled'}
+    request=adapt_request(request,settings.provider)
     # 完整请求编码量+固定余量是保守输入预算，不冒充实际token数。
     budget={'input_chars':sum(len(s['text']) for s in sources),
             'request_bytes':len(json.dumps(request,ensure_ascii=False,separators=(',',':')).encode())+1024}
@@ -326,7 +328,7 @@ RUNTIME_MESSAGES={
 def analyze_record(record, settings, store, principal, consent=False, client_factory=None, *, coverage_acknowledged=False):
     disabled=settings.ai_disabled_reason(principal)
     if disabled:raise AIError(disabled,code='disabled')
-    if not consent:raise AIError('请先确认有权将当前资料正文发送至 OpenAI API。',code='consent_required')
+    if not consent:raise AIError(f'请先确认有权将当前资料正文发送至 {settings.provider_spec.label} API。',code='consent_required')
     report=record.get('parse_report',{})
     if report.get('status') in ('failed','rejected'):
         raise AIError('文件解析失败，不能进行 AI 分析。',code='parse_failed')
@@ -339,6 +341,8 @@ def analyze_record(record, settings, store, principal, consent=False, client_fac
     lease=store.reserve_ai(settings,principal,**budget)
     started=time.monotonic()
     receipt={'run_id':uuid.uuid4().hex,'execution_mode':'live_sdk' if client_factory is None else 'injected_test_client',
+             'provider':settings.provider,'base_url':settings.provider_spec.base_url,'protocol':'responses',
+             'billing':billing_record(None),
              'requested_model':settings.model,'provider_model':None,'provider_response_id':None,
              'sdk_version':version('openai'),'started_at':datetime.now(ZoneInfo('Asia/Shanghai')).isoformat(timespec='seconds'),
              'call_status':'not_started','provider_status':None,'token_usage':None,
@@ -346,12 +350,13 @@ def analyze_record(record, settings, store, principal, consent=False, client_fac
              'input_budget':budget,'file_sha256':record['文件SHA256'],**analysis_context(record)}
     try:
         try:
-            response=invoke(settings.api_key,request,settings.total_timeout,client_factory)
+            response=invoke(settings.api_key,request,settings.total_timeout,client_factory,provider=settings.provider)
         except ModelRuntimeError as exc:
             receipt.update(exc.metadata)
             raise AIError(RUNTIME_MESSAGES.get(exc.code,'AI 工作进程异常，实际调用状态未知。'),code=exc.code) from None
         receipt.update({key:response.get(key) for key in ('call_status','provider_status','provider_model','provider_response_id','token_usage')})
         receipt['usage_status']='provider_reported' if response.get('token_usage') is not None else 'unavailable'
+        receipt['billing']=billing_record(response.get('token_usage'))
         if response.get('error_code'):
             code=response['error_code'];receipt['http_status']=response.get('http_status')
             raise AIError(RUNTIME_MESSAGES.get(code,'AI 服务暂不可用，请稍后再试。'),code=code)
@@ -371,7 +376,7 @@ def analyze_record(record, settings, store, principal, consent=False, client_fac
         receipt['duration_ms']=round((time.monotonic()-started)*1000)
         result.update(parse_scope={'status':report.get('status','not_recorded'),
                                    'coverage_acknowledged':coverage_acknowledged,'limitations':report.get('limitations',[])},
-                      model=settings.model,generated_at=datetime.now(ZoneInfo('Asia/Shanghai')).isoformat(timespec='seconds'),
+                      provider=settings.provider,model=settings.model,generated_at=datetime.now(ZoneInfo('Asia/Shanghai')).isoformat(timespec='seconds'),
                       mode='AI生成（待人工核验）',call_receipt=receipt)
         return result
     except KeyboardInterrupt:

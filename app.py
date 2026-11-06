@@ -52,7 +52,7 @@ with st.sidebar:
         for p in sorted((ROOT / 'samples').glob('*')):
             if p.suffix in ('.pdf', '.docx'):
                 add_file(p.name, p.read_bytes())
-    st.caption('资料与核验记录保存在会话内存中，请及时导出。规则提取不联网；只有确认并点击 AI 分析时，当前资料正文才会发送至 OpenAI API。')
+    st.caption(f'资料与核验记录保存在会话内存中，请及时导出。规则提取不联网；只有确认并点击 AI 分析时，当前资料正文才会发送至 {settings.provider_spec.label} API。')
     if st.button('清空本会话资料', width='stretch'):
         records.clear()
         st.session_state.pop('_ai_result', None)

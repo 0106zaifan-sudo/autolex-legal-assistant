@@ -1,3 +1,19 @@
+# 多服务商适配：最新离线测试记录
+
+2026-11-06；分支`feature/multi-provider-deepseek`，基线`feature/live-ai-acceptance`的`c9621de`。
+
+实际执行`python -m unittest discover -s tests -v`：**161项通过，15.226秒**。包含原135项原样保留的回归及新增26项DeepSeek/服务商测试。依赖通过`PYTHONPATH=/workspace/work/phase2_deps:/workspace/work/python_deps`加载，Python 3.12、官方openai 2.54.0，requirements版本未变。完整日志见[本轮离线日志](docs/multi_provider_offline_tests.txt)。
+
+新增覆盖：独立服务商凭据、默认值/非法配置、Codespaces安全Secret补入、SDK真实序列化的DeepSeek Responses请求及Schema、usage缓存/推理明细、金额未知、输出校验与事件时间绑定失败、HTTP400/401/402/429/500、网络超时及连接错误、子进程截止参数、共享输入/次数预算、解析覆盖与许可门禁、两份固定SIM材料的SDK离线通路、余额不足中止第二份以及界面服务商切换许可复位。
+
+本轮发现SDK会补入`cache_write_tokens=null`，现过滤SDK产生的空usage字段，保留服务商非空明细；不把空值当实测。最终运行全部通过，没有修改原测试断言。源码与Secrets模板检查未发现API密钥模式，未纳入Secrets、SQLite、缓存或真实案件文件；新增测试复用既有明确模拟材料。`git diff --check`通过。
+
+**真实付费请求0次。** SDK请求使用`httpx.MockTransport`，记录`injected_test_client`；SIM批次为`offline_test`，不能当作真实模型验收。两份真实场景仍为not_run，实测返回模型/token/费用未获得，准确率未测。未做公开部署、浏览器视觉或真实API兼容性验收。配置及官方文档核对见[多服务商说明](docs/MULTI_PROVIDER.md)。
+
+以下保留历史记录，不代表最新测试数量。
+
+---
+
 # 最新：P0真实模型验收准备阶段（无密钥）
 
 2026-11-06（北京时间），分支`feature/live-ai-acceptance`，父提交`267de0b`。

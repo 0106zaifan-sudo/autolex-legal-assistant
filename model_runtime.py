@@ -4,6 +4,7 @@ import json
 import logging
 import multiprocessing
 import time
+from ai_providers import get_provider
 from openai import (OpenAI, AuthenticationError, RateLimitError, APITimeoutError,
                     APIConnectionError, APIStatusError)
 
@@ -17,12 +18,13 @@ class ModelRuntimeError(ValueError):
         super().__init__(code)
 
 
-def call_sdk(api_key, request, client_factory=OpenAI):
+def call_sdk(api_key, request, client_factory=OpenAI, *, provider='openai'):
+    spec=get_provider(provider)
     try:
-        with client_factory(api_key=api_key,base_url='https://api.openai.com/v1',timeout=30.0,max_retries=0) as client:
+        with client_factory(api_key=api_key,base_url=spec.base_url,timeout=30.0,max_retries=0) as client:
             # create保留响应元数据，再在父进程做Schema/引证验证；解析失败也不丢usage。
             response=client.responses.create(**request)
-        usage=response.usage.model_dump(mode='json') if response.usage else None
+        usage=response.usage.model_dump(mode='json',exclude_none=True) if response.usage else None
         refused=any(getattr(content,'type',None)=='refusal' for output in response.output
                     for content in getattr(output,'content',[]))
         return {'provider_status':response.status,'provider_model':response.model,
@@ -43,11 +45,11 @@ def call_sdk(api_key, request, client_factory=OpenAI):
         return {'error_code':'sdk_error','call_status':'unknown'}
 
 
-def _sdk_worker(connection, api_key, request):
+def _sdk_worker(connection, api_key, request, provider='openai'):
     try:
         for logger in ('openai','httpx','httpcore'):
             logging.getLogger(logger).setLevel(logging.WARNING)
-        result=call_sdk(api_key,request)
+        result=call_sdk(api_key,request,provider=provider)
         encoded=json.dumps(result,ensure_ascii=False).encode()
         if len(encoded)>MAX_RESULT_BYTES:
             result.pop('output_text',None)
@@ -91,8 +93,9 @@ def run_process(target,args,timeout):
         parent.close();child.close()
 
 
-def invoke(api_key,request,timeout,client_factory=None):
+def invoke(api_key,request,timeout,client_factory=None,*,provider='openai'):
+    get_provider(provider)
     if client_factory is not None:
         # 仅给现有离线HTTP mock注入测试使用，不作为真实调用的截止保证。
-        return call_sdk(api_key,request,client_factory)
-    return run_process(_sdk_worker,(api_key,request),timeout)
+        return call_sdk(api_key,request,client_factory,provider=provider)
+    return run_process(_sdk_worker,(api_key,request,provider),timeout)

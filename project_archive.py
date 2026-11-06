@@ -4,6 +4,8 @@ import io
 import zipfile
 
 SOURCE_FILES = (
+    'ai_providers.py', 'tests/test_providers.py', 'docs/MULTI_PROVIDER.md',
+    'docs/multi_provider_offline_tests.txt',
     'model_runtime.py', 'live_acceptance.py', 'make_acceptance_samples.py',
     'tools/run_live_acceptance.py', 'tests/test_live_acceptance.py',
     'acceptance_samples/模拟_接管提示争议.docx', 'acceptance_samples/模拟_时间缺失与日志核验.docx',

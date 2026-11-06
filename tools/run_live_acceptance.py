@@ -8,6 +8,7 @@ import tomllib
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from live_acceptance import preparation_report,write_report,run_suite,AcceptanceError,ROOT
 from security import Settings,QuotaStore,SecurityError,verify_password
+from ai_providers import codespaces_values
 
 
 def main(argv=None):
@@ -28,7 +29,9 @@ def main(argv=None):
     if not path.is_file() or path.is_symlink():raise AcceptanceError('请先在本机安全配置标准Streamlit Secrets文件；不要在聊天发送密钥')
     if os.name=='posix' and path.stat().st_mode & 0o077:
         raise AcceptanceError('Secrets权限过宽，请先chmod 600 .streamlit/secrets.toml')
-    with path.open('rb') as handle:settings=Settings.from_secrets(tomllib.load(handle))
+    with path.open('rb') as handle:values=tomllib.load(handle)
+    try:settings=Settings.from_secrets(codespaces_values(values,os.environ))
+    except ValueError as exc:raise AcceptanceError(str(exc)) from None
     # 固定相对路径以免从其他工作目录运行时意外创建第二份计数库。
     from dataclasses import replace
     db=Path(settings.db_path)
@@ -38,7 +41,7 @@ def main(argv=None):
     password=getpass.getpass('输入访问密码以执行两份模拟材料真实验收（不会显示或保存）：')
     if not verify_password(password,settings.password_hash):raise AcceptanceError('访问认证未通过，未调用模型')
     del password
-    print('仅处理两份固定模拟材料；失败也占次数/输入预算，不自动重试。冷却期默认30秒。',flush=True)
+    print(f'服务商：{settings.provider_spec.label}；请求模型：{settings.model}。仅处理两份固定模拟材料；失败也占次数/输入预算，不自动重试。冷却期默认30秒。',flush=True)
     report,directory=run_suite(settings,quota,settings.principal,output,confirm_paid=True)
     print('报告已写入：'+str(directory))
     print('真实尝试次数：'+str(report['actual_live_attempts'])+'；人工语义复核仍待完成。')

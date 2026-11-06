@@ -45,12 +45,12 @@ def load_scenarios(root=SAMPLES):
 def preparation_report(root=SAMPLES):
     manifest,loaded=load_scenarios(root)
     return {'report_version':'1.0','phase':'awaiting_secure_configuration',
-            'execution_mode':'preparation_only','actual_live_attempts':0,
+            'execution_mode':'preparation_only','actual_live_attempts':0,'provider':None,'protocol':'responses',
             'created_at':datetime.now(ZoneInfo('Asia/Shanghai')).isoformat(timespec='seconds'),
             'suite_version':manifest['suite_version'],
             'cases':[{'scenario_id':entry['id'],'file_name':record['文件名'],
                       'file_sha256':record['文件SHA256'],'parse_status':record['parse_report']['status'],
-                      'call_status':'not_run','requested_model':None,'provider_model':None,'token_usage':None,
+                      'call_status':'not_run','provider':None,'requested_model':None,'provider_model':None,'token_usage':None,
                       'automatic_checks':None,'human_review':{'status':'pending','notes':None},
                       'expected_checks':entry['gold']} for entry,record in loaded],
             'acceptance_status':'not_evaluated','accuracy':None}
@@ -125,12 +125,14 @@ def run_suite(settings,store,principal,output_root,*,root=SAMPLES,confirm_paid=F
     real=executor is None
     executor=analyze_record if executor is None else executor
     report=preparation_report(root)
-    report.update(phase='execution_in_progress',execution_mode='live_sdk' if real else 'offline_test')
+    report.update(phase='execution_in_progress',execution_mode='live_sdk' if real else 'offline_test',
+                  provider=settings.provider,base_url=settings.provider_spec.base_url)
     directory=Path(output_root)/uuid.uuid4().hex
     write_report(report,directory)
     for index,(entry,record) in enumerate(loaded):
         row=report['cases'][index]
         row['requested_model']=settings.model
+        row['provider']=settings.provider
         delay=store.budget_snapshot(settings,principal)['cooldown_remaining']
         if delay>0:
             if delay>60:raise AcceptanceError('冷却等待超出本批次上限；不会自动重复请求')
@@ -140,6 +142,8 @@ def run_suite(settings,store,principal,output_root,*,root=SAMPLES,confirm_paid=F
             receipt=result.get('call_receipt',{})
             if real and receipt.get('execution_mode')!='live_sdk':
                 raise AcceptanceError('结果不是默认真实SDK路径，不能计入真实模型验收')
+            if real and receipt.get('provider')!=settings.provider:
+                raise AcceptanceError('结果服务商与本次配置不匹配，不能计入验收')
             row.update(call_status='response_validated',call_receipt=receipt,provider_model=receipt.get('provider_model'),
                        token_usage=receipt.get('token_usage'),
                        automatic_checks=automatic_checks(entry,record,result))
@@ -155,7 +159,8 @@ def run_suite(settings,store,principal,output_root,*,root=SAMPLES,confirm_paid=F
             if real and receipt and receipt.get('execution_mode')=='live_sdk':
                 report['actual_live_attempts']+=1
             write_report(report,directory)
-            if getattr(exc,'code',None) in ('authentication_failed','rate_limited','cancelled'):
+            if (getattr(exc,'code',None) in ('authentication_failed','rate_limited','cancelled')
+                    or (receipt or {}).get('http_status')==402):
                 break  # 认证或服务商额度失败后不继续消耗第二次请求。
             continue
         if real:report['actual_live_attempts']+=1
