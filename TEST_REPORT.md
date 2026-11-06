@@ -1,3 +1,17 @@
+# 最新：事实/主张分类范围及安全诊断补丁
+
+2026-11-06（北京时间）；`feature/multi-provider-deepseek`，基线`62782c4`。
+
+实际执行`python -m unittest discover -s tests -v`：**176项通过，16.032秒**；原161项测试文件未改，新增15项分类回归。完整日志见[本轮离线日志](docs/fact_classification_offline_tests.txt)，原因、具体修改与残余风险见[分类修复说明](docs/FACT_CLASSIFICATION_PATCH.md)。
+
+保留完整CLAIM_MARKERS词表；检查已核验引文所在原文句及前置归属，排除后续独立句污染，继续拒绝截掉主张/核实前缀、跨块及后置承接限定等情况。新增分类失败的section、0基条目索引、source_id、触发词及规则诊断，不记录原文。Schema 2.0、哈希/source生成、时间绑定及权限/限流实现保持不变。
+
+本轮真实API调用0次，不加载实际Secrets，不运行付费验收，不部署。用户报告的真实SIM_B失败没有被本轮离线结果替代；现有信息不足以确定具体触发项，不能宣称真实复测通过。SIM_B的日志完整性仍必须保守标为待核实。
+
+以下保留历史报告。
+
+---
+
 # 多服务商适配：最新离线测试记录
 
 2026-11-06；分支`feature/multi-provider-deepseek`，基线`feature/live-ai-acceptance`的`c9621de`。

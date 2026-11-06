@@ -31,7 +31,8 @@ PROMPT = '''你是法律资料整理助手，仅能使用输入的 sources，不
 每一项必须引用至少一个 source_id 和该块中的完整、连续、唯一的原文 quote。
 所有项目的 text 必须是某条引文中的连续原文摘录，不得改写或补写。概括推理只放 reasoning。
 kind 必须区分事实、主张、推断。事实表示资料记载而非认定真实；当事人的陈述/主张不能当成事实。
-主张所在文本块的项目不得标为事实。推断 reasoning 必须用“待核实推断：”开头，非推断 reasoning 为空。
+事实摘录不得截掉说话人、主张前缀或核实限定；混合材料应引用独立完整原文句，无法区分时保守标为主张或待核实推断。
+推断 reasoning 必须用“待核实推断：”开头，非推断 reasoning 为空。
 issues 和 pending_evidence 全部标为推断，只提出待核实问题，不得断言责任归属或证据存在/缺失。
 推断 reasoning 只能提出以问号结束的待核实问题，不陈述新事实或归责结论。
 不输出法条、法律效力判断、案例或案号。不得编造事故时间。
@@ -49,9 +50,10 @@ time_precision只能为date、minute、second或unknown；必须与原文相符�
 
 
 class AIError(ValueError):
-    def __init__(self,message,*,code='validation_rejected',receipt=None):
+    def __init__(self,message,*,code='validation_rejected',receipt=None,diagnostic=None):
         self.code=code
         self.receipt=receipt
+        self.diagnostic=diagnostic
         super().__init__(message)
 
 
@@ -135,6 +137,9 @@ DATE_TIME = re.compile(
 OTHER_TIME = re.compile(r'\d{1,2}:\d{2}|\d{1,2}(?:时|点|分|秒|月|日)|\d{4}年|\d{4}[-/]\d|(?<!\d)\d{1,2}[-/]\d{1,2}(?!\d)')
 UNCERTAIN_TIME = re.compile(r'时间(?:未知|不明|不详)|日期(?:未知|不明|不详)|无法(?:确定|确认)|尚未(?:确定|确认)|并非|不是|并未|未于|未发生|不早于|不晚于|早于|晚于|之前|之后|前后|预计|估计|推测|疑似|大约|可能|约于|约在|约(?=\d)|左右|次日|翌日|昨日|昨天|次月|次年')
 SENTENCE_END = re.compile(r'[。！？!?；;\r\n]')
+# 分类不把逗号/分号当作归属或核实限定结束；不影响时间线的句段规则。
+CLASSIFICATION_END = re.compile(r'[。！？!?\r\n]')
+CONTEXT_CONTINUATION = re.compile(r'^\s*(?:上述|前述|以上|该|此|这些|其|相关|尚未核实|待核实|仍需|仍待)')
 
 
 def _explicit_time(text, quote):
@@ -242,6 +247,35 @@ def _order_timeline(items):
     return ordered + sorted(unknown, key=_event_order)
 
 
+def _fact_classification_diagnostic(ref, record, section, item_index):
+    """仅排除后续独立句的污染；保留前置归属，不能靠截前缀/换块洗成事实。
+
+    从已核验坐标回到原始unit，补齐引文结尾所在句的剩余部分。
+    不以逗号断句：同句的“尚未核实”等限定仍约束摘录。
+    之前的标记保守保留，跨句归属不清时交人工，不在此推断主张已结束。
+    """
+    unit_text = record['units'][ref['unit_index']]['text']
+    scope_end = ref['end']
+    if not CLASSIFICATION_END.search(unit_text[:scope_end].rstrip(' \t')[-1:]):
+        boundary = CLASSIFICATION_END.search(unit_text, scope_end)
+        scope_end = boundary.end() if boundary else len(unit_text)
+    # “上述记录尚未核实”等后置承接限定也不能通过截句移除。
+    tail_start = scope_end
+    for tail in re.finditer(r'[^。！？!?\r\n]+[。！？!?\r\n]?', unit_text[tail_start:]):
+        if CONTEXT_CONTINUATION.match(tail.group()) and CLAIM_MARKERS.search(tail.group()):
+            scope_end = tail_start + tail.end()
+            break
+    markers = list(dict.fromkeys(match.group() for match in CLAIM_MARKERS.finditer(unit_text[:scope_end])))
+    if markers:
+        # 只记录固定规则名/词表、下标和坐标；不保存引文、文件名或模型原始输出。
+        return {'section': section, 'item_index': item_index, 'item_index_base': 0,
+                'source_id': ref['source_id'], 'matched_markers': markers,
+                'rule': 'fact_from_claim_or_unverified_context',
+                'scope': 'original_unit_prefix_sentence_and_continuation',
+                'unit_index': ref['unit_index'], 'scope_start': 0, 'scope_end': scope_end}
+    return None
+
+
 def validate_analysis(parsed, record, sources):
     if isinstance(parsed, dict) and parsed.get('schema_version') != SCHEMA_VERSION:
         raise AIError('旧版或未知分析Schema不兼容，请按2.0重新分析；不能静默复用旧证据绑定。')
@@ -256,7 +290,7 @@ def validate_analysis(parsed, record, sources):
               'data_type': record['数据类型'], 'verification': '待人工核验', 'sections': {}}
     for name in SECTIONS:
         items = []
-        for item in getattr(parsed, name):
+        for item_index, item in enumerate(getattr(parsed, name)):
             refs = []
             for ref in item.sources:
                 src = lookup.get(ref.source_id)
@@ -271,8 +305,11 @@ def validate_analysis(parsed, record, sources):
             quotes = [r['quote'] for r in refs]
             if not any(item.text in quote for quote in quotes):
                 raise AIError('模型补写了非原文事实摘要，结果已拒绝。')
-            if item.kind == '事实' and any(CLAIM_MARKERS.search(lookup[r.source_id]['text']) for r in item.sources):
-                raise AIError('模型把含主张或待核实标记的材料标成事实，结果已拒绝。')
+            if item.kind == '事实':
+                for ref in refs:
+                    diagnostic = _fact_classification_diagnostic(ref, record, name, item_index)
+                    if diagnostic:
+                        raise AIError('模型把含主张或待核实标记的材料标成事实，结果已拒绝。',diagnostic=diagnostic)
             if name in ('issues', 'pending_evidence') and item.kind != '推断':
                 raise AIError('争议焦点和待核实证据必须标为推断，结果已拒绝。')
             if item.kind == '推断':
@@ -371,6 +408,8 @@ def analyze_record(record, settings, store, principal, consent=False, client_fac
             result=validate_analysis(parsed,record,sources)
         except AIError as exc:
             receipt.update(validation_status='failed',validation_error_kind='evidence_binding',validation_detail=str(exc))
+            if exc.diagnostic is not None:
+                receipt['validation_diagnostic']=exc.diagnostic
             raise AIError('AI 引证或时间绑定校验失败，未保存分析；调用元数据仍已记录。',code='output_validation_failed') from None
         receipt['validation_status']='passed'
         receipt['duration_ms']=round((time.monotonic()-started)*1000)
