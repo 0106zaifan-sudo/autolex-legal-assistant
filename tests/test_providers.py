@@ -1,4 +1,5 @@
 """DeepSeek离线验收：官方SDK+MockTransport，绝不作为真实模型效果证据。"""
+from ui_isolation import IsolatedUITestCase
 from copy import deepcopy
 from dataclasses import replace
 import io
@@ -287,7 +288,7 @@ class DeepSeekSDKTests(unittest.TestCase):
         self.assertEqual(report['actual_live_attempts'],0)
 
 
-class ProviderUITests(unittest.TestCase):
+class ProviderUITests(IsolatedUITestCase):
     def test_deepseek_without_key_disables_ai_and_names_correct_recipient(self):
         from streamlit.testing.v1 import AppTest
         with tempfile.TemporaryDirectory() as tmp, patch('ai_ui.analyze_record') as call:

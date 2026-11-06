@@ -1,8 +1,9 @@
+from ui_isolation import IsolatedUITestCase
 from pathlib import Path
 import unittest
 from streamlit.testing.v1 import AppTest
 
-class AppTests(unittest.TestCase):
+class AppTests(IsolatedUITestCase):
     def test_load_search_review_export_and_clear(self):
         app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / 'app.py'), default_timeout=30)
         app.secrets['APP_MODE'] = 'local'

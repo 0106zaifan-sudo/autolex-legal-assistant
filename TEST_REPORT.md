@@ -1,3 +1,17 @@
+# 最新：单场景验收与UI测试配置隔离
+
+2026-11-06（北京时间）；`feature/multi-provider-deepseek`，基线`64282dc`。
+
+实际执行`python -m unittest discover -s tests -v`：**223项通过，18.167秒**，包含原205项及新增18项。四个原UI测试文件只接入隔离基类/setUp，test_*方法和断言不变；其余原测试文件未改。完整日志见[本轮离线日志](docs/single_scenario_offline_tests.txt)，具体变更见[单场景说明](docs/SINGLE_SCENARIO.md)。
+
+覆盖SIM_A/SIM_B单选、默认双样本、未选报告、费用与认证保护、仅选中样本预留预算、剩余一次额度、原账本不重置/失败不退款、未选样本哈希校验、安全捕获兼容，以及模拟宿主环境/本地Secrets隔离。CLI真实路径测试仅使用内存虚构配置与执行替身，不打开实际Secrets或调用SDK。
+
+真实模型请求0次。不读取或改写实际Secrets，不部署；分类、哈希、时间、模型超时/重试、限流、安全捕获及固定材料/gold与基线一致。测试通过不代表真实验收通过。
+
+以下保留历史记录。
+
+---
+
 # 最新：SIM_B失败定位与可选私有调试
 
 2026-11-06（北京时间）；`feature/multi-provider-deepseek`，基线`5a18ec3`。

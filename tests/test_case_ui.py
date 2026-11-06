@@ -1,3 +1,4 @@
+from ui_isolation import IsolatedUITestCase
 from pathlib import Path
 import unittest
 from streamlit.testing.v1 import AppTest
@@ -6,7 +7,7 @@ from document_parser import parse_document
 ROOT=Path(__file__).resolve().parents[1]
 
 
-class CaseWorkspaceUITests(unittest.TestCase):
+class CaseWorkspaceUITests(IsolatedUITestCase):
     def app(self):
         app=AppTest.from_file(str(ROOT/'app.py'),default_timeout=30)
         app.secrets['APP_MODE']='local'

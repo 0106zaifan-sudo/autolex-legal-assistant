@@ -155,3 +155,7 @@ python -m unittest discover -s tests -v
 ## 固定SIM_B失败定位（完全离线）
 
 `python tools/replay_sim_b.py`生成9项人工构造对照，不读取Secrets、不访问模型。可选私有调试仅面向哈希固定的SIM_A/SIM_B，默认关闭，失败输出不作为有效案件结果。操作和下一次真实复测清单见[SIM_B调试说明](docs/SIM_B_DEBUG.md)；本轮不修改分类规则，也未执行付费验收。
+
+## 单场景验收准备
+
+`python tools/run_live_acceptance.py --scenario SIM_B`只做SIM_B的离线准备，不读取Secrets、不调用API；可改为SIM_A，不传参数保留双样本选择。报告始终列出两份场景并明确未选场景未运行。真实调用仍需原显式费用确认与本人认证；[完整说明、预算与UI测试隔离](docs/SINGLE_SCENARIO.md)。本轮仅完成离线测试。

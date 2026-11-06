@@ -1,3 +1,4 @@
+from ui_isolation import IsolatedUITestCase
 import tempfile
 import unittest
 from pathlib import Path
@@ -8,13 +9,14 @@ from security import hash_password
 
 ROOT=Path(__file__).resolve().parents[1]
 
-class UIAccessTests(unittest.TestCase):
+class UIAccessTests(IsolatedUITestCase):
     @classmethod
     def setUpClass(cls):
         cls.password='simulation-access-password'
         cls.password_hash=hash_password(cls.password)
 
     def setUp(self):
+        super().setUp()
         self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
 
     def app(self, **secrets):

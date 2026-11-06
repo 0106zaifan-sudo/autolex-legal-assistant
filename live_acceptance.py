@@ -42,13 +42,26 @@ def load_scenarios(root=SAMPLES):
     return manifest,loaded
 
 
-def preparation_report(root=SAMPLES):
+def selected_scenarios(loaded,scenario=None):
+    if scenario not in (None,'SIM_A','SIM_B'):
+        raise AcceptanceError('scenario 必须为 SIM_A 或 SIM_B')
+    selected=[pair for pair in loaded if scenario is None or pair[0]['id']==scenario]
+    if not selected:
+        raise AcceptanceError('未找到指定固定模拟场景')
+    return selected
+
+
+def preparation_report(root=SAMPLES,*,scenario=None):
     manifest,loaded=load_scenarios(root)
+    selected={entry['id'] for entry,_ in selected_scenarios(loaded,scenario)}
     return {'report_version':'1.0','phase':'awaiting_secure_configuration',
             'execution_mode':'preparation_only','actual_live_attempts':0,'provider':None,'protocol':'responses',
             'created_at':datetime.now(ZoneInfo('Asia/Shanghai')).isoformat(timespec='seconds'),
             'suite_version':manifest['suite_version'],
+            'selected_scenarios':[entry['id'] for entry,_ in loaded if entry['id'] in selected],
             'cases':[{'scenario_id':entry['id'],'file_name':record['文件名'],
+                      'selected':entry['id'] in selected,
+                      'not_run_reason':'awaiting_execution' if entry['id'] in selected else 'not_selected',
                       'file_sha256':record['文件SHA256'],'parse_status':record['parse_report']['status'],
                       'call_status':'not_run','provider':None,'requested_model':None,'provider_model':None,'token_usage':None,
                       'automatic_checks':None,'human_review':{'status':'pending','notes':None},
@@ -62,15 +75,15 @@ def preflight(settings,store,principal,loaded):
     if not settings.single_instance:
         raise AcceptanceError('本验收要求显式确认AI_SINGLE_INSTANCE=true并使用同一持久SQLite')
     if settings.cooldown>60:
-        raise AcceptanceError('两份材料的冷却间隔超过60秒，请调整安全测试计划后再运行；未调用模型。')
+        raise AcceptanceError('本批次冷却间隔超过60秒，请调整安全测试计划后再运行；未调用模型。')
     budgets=[prepare_request(record,settings)[2] for _,record in loaded]
     remaining=store.budget_snapshot(settings,principal)
-    if min(remaining['daily_calls_remaining'],remaining['hourly_calls_remaining'])<2:
-        raise AcceptanceError('剩余调用次数不足两份验收，未发起请求')
+    if not loaded or min(remaining['daily_calls_remaining'],remaining['hourly_calls_remaining'])<len(loaded):
+        raise AcceptanceError('剩余调用次数不足选中场景验收，未发起请求')
     for name,requested in [('chars',sum(b['input_chars'] for b in budgets)),
                            ('bytes',sum(b['request_bytes'] for b in budgets))]:
         if requested>min(remaining['daily_'+name+'_remaining'],remaining['hourly_'+name+'_remaining']):
-            raise AcceptanceError('剩余累计输入预算不足两份验收，未发起请求')
+            raise AcceptanceError('剩余累计输入预算不足选中场景验收，未发起请求')
     return budgets
 
 
@@ -105,32 +118,35 @@ def write_report(report,directory):
     path.write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8');path.chmod(0o600)
     lines=['# AutoLex模型验收记录','',f"阶段：{report['phase']}",f"执行类型：{report['execution_mode']}",
            f"真实尝试次数：{report['actual_live_attempts']}",'',
+           '本次选择：'+', '.join(report.get('selected_scenarios',['SIM_A','SIM_B'])),'',
            '程序匹配检查不能代替语义人工审查；没有真实响应时模型标识和token均为未知，不填0或准确率。','',
-           '| 场景 | 调用状态 | 返回模型标识 | token记录 | 人工复核 |','|---|---|---|---|---|']
+           '| 场景 | 调用状态 | 未运行原因 | 返回模型标识 | token记录 | 人工复核 |','|---|---|---|---|---|---|']
     for case in report['cases']:
         receipt=case.get('call_receipt') or {}
         model=receipt.get('provider_model') or '未获得'
         usage='已返回，见JSON' if receipt.get('token_usage') is not None else '未获得'
-        lines.append(f"| {case['scenario_id']} | {case['call_status']} | {model} | {usage} | pending |")
+        reason='未选择，未运行' if case.get('not_run_reason')=='not_selected' else (case.get('not_run_reason') or '')
+        lines.append(f"| {case['scenario_id']} | {case['call_status']} | {reason} | {model} | {usage} | pending |")
     (directory/'report.md').write_text('\n'.join(lines)+'\n',encoding='utf-8')
     return path
 
 
-def run_suite(settings,store,principal,output_root,*,root=SAMPLES,confirm_paid=False,executor=None,sleeper=time.sleep,debug_rejected_samples=False):
+def run_suite(settings,store,principal,output_root,*,root=SAMPLES,confirm_paid=False,executor=None,sleeper=time.sleep,debug_rejected_samples=False,scenario=None):
     if not confirm_paid:
-        raise AcceptanceError('未明确允许两次付费请求；仅可运行准备模式')
+        raise AcceptanceError('未明确允许付费请求；仅可运行准备模式')
     _,loaded=load_scenarios(root)
+    loaded=selected_scenarios(loaded,scenario)
     preflight(settings,store,principal,loaded)
     # 注入executor的单元测试永远标为offline_test，不能伪装为真实SDK验收。
     real=executor is None
     executor=analyze_record if executor is None else executor
-    report=preparation_report(root)
+    report=preparation_report(root,scenario=scenario)
     report.update(phase='execution_in_progress',execution_mode='live_sdk' if real else 'offline_test',
                   provider=settings.provider,base_url=settings.provider_spec.base_url)
     directory=Path(output_root)/uuid.uuid4().hex
     write_report(report,directory)
-    for index,(entry,record) in enumerate(loaded):
-        row=report['cases'][index]
+    for entry,record in loaded:
+        row=next(row for row in report['cases'] if row['scenario_id']==entry['id'])
         row['requested_model']=settings.model
         row['provider']=settings.provider
         delay=store.budget_snapshot(settings,principal)['cooldown_remaining']
@@ -138,6 +154,7 @@ def run_suite(settings,store,principal,output_root,*,root=SAMPLES,confirm_paid=F
             if delay>60:raise AcceptanceError('冷却等待超出本批次上限；不会自动重复请求')
             sleeper(delay+0.05)
         try:
+            row['not_run_reason']=None
             options={'coverage_acknowledged':True}
             if debug_rejected_samples is True:
                 options['debug_rejected_samples']=True
@@ -168,7 +185,7 @@ def run_suite(settings,store,principal,output_root,*,root=SAMPLES,confirm_paid=F
             continue
         if real:report['actual_live_attempts']+=1
         write_report(report,directory)
-    report.update(phase='awaiting_human_review' if all(c['call_status']=='response_validated' for c in report['cases']) else 'needs_error_review',
+    report.update(phase='awaiting_human_review' if all(c['call_status']=='response_validated' for c in report['cases'] if c['selected']) else 'needs_error_review',
                   acceptance_status='not_approved',accuracy=None)
     write_report(report,directory)
     return report,directory
