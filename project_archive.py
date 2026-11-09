@@ -4,6 +4,7 @@ import io
 import zipfile
 
 SOURCE_FILES = (
+    'tests/test_timeline_completeness.py', 'docs/TIMELINE_COMPLETENESS_PATCH.md', 'docs/timeline_completeness_offline_tests.txt',
     'tests/test_output_quality.py', 'docs/OUTPUT_QUALITY_P1.md', 'docs/output_quality_p1_offline_tests.txt',
     'tests/ui_isolation.py', 'tests/test_single_scenario.py',
     'docs/SINGLE_SCENARIO.md', 'docs/single_scenario_offline_tests.txt',

@@ -73,6 +73,8 @@ def render_result(result, key):
     st.text('对应文件：' + result['file_name'])
     st.caption('文件 SHA256：' + result['file_sha256'])
     st.warning('全部内容待人工核验。“事实”仅指原文记载，不代表真实性已确认。引文一致性校验不能证明推理成立。')
+    if result.get('timeline_completeness',{}).get('status')=='needs_review':
+        st.warning('时间线完整性待人工核查：重要事件或未知时间核查问题可能遗漏，或事实与事件归属不一致。请查看分析JSON中的定位诊断；系统未自动补事件、日期或问题。')
     names = {'facts': '关键事实及主张', 'timeline': '事故时间线',
              'issues': '法律争议焦点（待核实推断）', 'pending_evidence': '待核实证据（待核实推断）'}
     for section, label in names.items():

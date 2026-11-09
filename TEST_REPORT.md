@@ -1,3 +1,17 @@
+# 最新：V1.1时间线完整性补丁
+
+2026-11-09（北京时间）；`feature/output-quality-p1-timeline`，基线`e5e0744`。原工作区干净，独立worktree开发。
+
+完整离线回归：**267项通过，17.506秒**；原247项加新增20项。仅一处旧Prompt修订号断言按新版本更新，没有删除断言；其他旧测试与固定材料/gold不变。完整日志见[本轮离线日志](docs/timeline_completeness_offline_tests.txt)，根因、最小修复及局限见[补丁说明](docs/TIMELINE_COMPLETENESS_PATCH.md)。
+
+Prompt明确未知时间重要事件仍应进入timeline、facts与timeline合理复用不受去重影响，并提对应时间核查问题。新增只读完整性诊断及UI警告，不自动补事件、时间或问题。人工构造漏碰撞响应仍只有接收事件，原timeline_expected_bindings仍失败，证明未降低金标准。
+
+原Schema/证据/时间函数、P1分类去重与元信息审计、人工核验、安全/限流/超时、受控验收工具均保持不变。用户提供的真实失败仅用于构造离线情形，未读取私有验收文件或Secrets，真实API调用0次，不部署或合并。仅Prompt不能可靠保证完整性；新DeepSeek输出是否恢复两条事件仍待真实复测。
+
+以下保留历史报告。
+
+---
+
 # 最新：P1输出质量
 
 2026-11-09（北京时间）；分支`feature/output-quality-p1`，基线`feature/multi-provider-deepseek`的`9ea9fd1`。原工作区开始时干净，在独立worktree开发。用户已告知基线真实DeepSeek验收通过；本轮不读取或复制其私有记录。

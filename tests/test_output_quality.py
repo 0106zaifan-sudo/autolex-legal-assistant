@@ -182,7 +182,7 @@ class OutputQualityTests(unittest.TestCase):
         self.assertEqual(result['schema_version'],'2.0')
         self.assertEqual(result['prompt_version'],'evidence-binding-v2')
         self.assertEqual(result['output_quality_version'],'output-quality-p1/v1')
-        self.assertEqual(result['call_receipt']['prompt_revision'],'output-quality-p1/v1')
+        self.assertEqual(result['call_receipt']['prompt_revision'],'output-quality-p1-timeline/v1')
         self.assertTrue(result['call_receipt']['prompt_sha256'])
 
     def test_routing_over_pending_capacity_fails_without_dropping_questions(self):

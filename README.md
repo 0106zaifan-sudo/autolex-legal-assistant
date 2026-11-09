@@ -165,3 +165,9 @@ python -m unittest discover -s tests -v
 `feature/output-quality-p1`基于`9ea9fd1`，先完整核验原文证据，再将误放facts的推断移到待核实列表，仅精确重复合并，已知模拟声明保留为文件元信息。分析JSON含quality_audit，保留处理前条目与来源。重复病句或待核实项超原容量上限明确拒绝，不自动改写或重试。
 
 Schema 2.0兼容不变，新增独立prompt_revision/output_quality_version及原Prompt哈希追踪；原始validator与历史JSON回放保持兼容。24项新测试加原223项全部离线通过，本轮未进行真实模型复测。具体前后对照、文件清单和最小真实复测建议见[P1说明](docs/OUTPUT_QUALITY_P1.md)。
+
+## V1.1未知时间事件补丁
+
+独立分支`feature/output-quality-p1-timeline`强化Prompt：原文支持的重要事件即使无日期也应列timeline，facts与timeline的合理复用不属于重复。新增只读的timeline_completeness诊断和UI警告，提示重要事件/时间核查问题可能遗漏，不自动补事件或日期；no_gap_detected也不是完整性证明。原金标准、证据绑定及P1质量规则未改。
+
+本轮267项离线测试通过，未调用真实API。根因、完整修改清单及下一次最小复测见[时间线补丁说明](docs/TIMELINE_COMPLETENESS_PATCH.md)。

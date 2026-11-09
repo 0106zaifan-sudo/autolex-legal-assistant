@@ -20,8 +20,9 @@ from sample_debug import capture_rejected_output
 
 SCHEMA_VERSION = '2.0'
 PROMPT_VERSION = 'evidence-binding-v2'
-PROMPT_REVISION = 'output-quality-p1/v1'
+PROMPT_REVISION = 'output-quality-p1-timeline/v1'
 OUTPUT_QUALITY_VERSION = 'output-quality-p1/v1'
+TIMELINE_COMPLETENESS_VERSION = 'timeline-completeness/v1'
 SECTIONS = ('facts', 'timeline', 'issues', 'pending_evidence')
 
 MAX_INPUT_CHARS = 24000
@@ -36,7 +37,7 @@ PROMPT = '''你是法律资料整理助手，仅能使用输入的 sources，不
 所有项目的 text 必须是某条引文中的连续原文摘录，不得改写或补写。概括推理只放 reasoning。
 kind 必须区分事实、主张、推断。事实表示资料记载而非认定真实；当事人的陈述/主张不能当成事实。
 facts是列表名，不代表已确认事实；其中当事人陈述仍必须kind=主张，不得改为事实。
-本轮提示修订output-quality-p1/v1；context的版本字段仍逐字回传，不用修订号替换。
+本轮提示修订output-quality-p1-timeline/v1；context的版本字段仍逐字回传，不用修订号替换。
 facts禁止kind=推断，只保留客观材料记载和有原文归属的当事人主张；待核实问题归pending_evidence，争议研究问题归issues。
 同一证据锚点、相同摘录及相同问题只保留一次；不在facts和pending_evidence重复同一待核实事项。不同当事人的相反主张分别保留，不因共用证据删除不同问题。
 模拟数据声明、演示用途、文件标识等元信息不作案件事实或事故事件；仍保留sources供文件识别和审计，不改写声明。
@@ -53,6 +54,11 @@ reasoning先指出原文支持的核查对象，再问一个具体可核查的�
 不输出法条、法律效力判断、案例或案号。不得编造事故时间。
 必须逐字回传输入context的schema_version、prompt_version、parser_version、document_sha256、parsed_text_sha256。
 timeline只接受原文事实/主张摘录，不接受推断；text必须与event_source.quote完全一致。
+时间线必须检查原文独立支持的重要案件事件（如碰撞、维修、材料接收），有无具体日期均需检查，不能只保留带日期的事件。
+时间未知不等于事件不存在；原文支持事件而未记载具体日期/时刻时，应纳入timeline，按下文unknown规则填写，不推算日期。
+facts与timeline职责不同：同一事件可分别作为事实/主张摘录和时间组织出现，不能因为facts已有事件就省略timeline；facts与pending_evidence的去重规则不适用于这种合理引用复用。
+逐项核对已摘录的重要事件是否在timeline有对应原文、相同归属类型和时间状态；不得机械复制全部facts，模拟声明、目录元信息及非事件问题不作事件。
+对碰撞等事件未记载时间的情况，在pending_evidence引用该事件原文，提出如“碰撞具体时间有无其他材料记载？”的待核实问题；只提问，不断言其他材料已经存在或具体时间已知。
 每条timeline的sources只能有event_source这一条；event_source必须是同一条原文的唯一、连续、完整的单句摘录，不得截去说话人、否定词或限定语。
 有明确时间时time_state=explicit，time_source必须与event_source完全相同，time_text为该事件引文中唯一的完整原样日期/时间。
 同一引文出现多个日期/时刻或无法确认时间与事件关系时，不能任选其一。请缩小至独立原文事件引文，否则设为未知。
@@ -431,6 +437,72 @@ def _apply_output_quality(validated,record):
     return result
 
 
+IMPORTANT_EVENT = re.compile(r'发生(?:碰撞|追尾|事故)|完成维修|收到(?:车辆)?检查材料')
+NON_ASSERTED_EVENT = re.compile(r'未(?:曾)?发生|没有发生|否认|是否发生|可能发生|假如|如果|假设|疑似')
+
+
+def _assess_timeline_completeness(result,record):
+    """对已验证facts的有限正向事件作诊断，不读取金标准、不添加事件或问题。
+
+    只有位置相同且覆盖事实摘录的事件可算对应；同字异处、相反来源不能替代。
+    no_gap_detected也不是全文完整性证明：facts与timeline均遗漏时此比较无法发现。
+    """
+    diagnostics=[]
+    candidates=0
+    def covers(ref,anchor):
+        return (all(ref[key]==anchor[key] for key in
+                    ('document_sha256','parsed_text_sha256','parser_version','unit_index'))
+                and ref['start']<=anchor['start'] and ref['end']>=anchor['end'])
+    def add(rule,index,anchor):
+        diagnostics.append({'rule':rule,'section':'facts','item_index':index,'item_index_base':0,
+                            'source_id':anchor['source_id'],'document_sha256':anchor['document_sha256'],
+                            'parsed_text_sha256':anchor['parsed_text_sha256'],'unit_index':anchor['unit_index'],
+                            'start':anchor['start'],'end':anchor['end']})
+    for index,row in enumerate(result['sections']['facts']):
+        if not IMPORTANT_EVENT.search(row['text']) or NON_ASSERTED_EVENT.search(row['text']):
+            continue
+        candidates+=1
+        ref=row['sources'][0]
+        if len(row['sources'])!=1 or ref['quote'].count(row['text'])!=1:
+            add('event_context_ambiguous',index,ref)
+            continue
+        start=ref['start']+ref['quote'].index(row['text'])
+        anchor={**ref,'start':start,'end':start+len(row['text'])}
+        # 回到同一原始句段判断时间支持，不使用宽引文中另一事件的日期。
+        unit=record['units'][ref['unit_index']]['text']
+        begin=max((match.end() for match in SENTENCE_END.finditer(unit,0,start)),default=0)
+        end=anchor['end']
+        if not SENTENCE_END.search(unit[end-1:end]):
+            boundary=SENTENCE_END.search(unit,end)
+            end=boundary.end() if boundary else len(unit)
+        context=unit[begin:end]
+        if SENTENCE_END.search(context.rstrip('。！？!?；;\r\n \t')):
+            add('event_context_ambiguous',index,anchor)
+            continue
+        matching=[event for event in result['sections']['timeline'] if covers(event['event_source'],anchor)]
+        if not matching:
+            add('important_fact_event_missing_from_timeline',index,anchor)
+        elif not any(event['kind']==row['kind'] for event in matching):
+            add('timeline_kind_mismatch',index,anchor)
+        explicit=False
+        date=DATE_TIME.search(context)
+        if date:
+            try:
+                _explicit_time(date.group(),context)
+                explicit=True
+            except AIError:
+                pass  # 歧义时间不转成事件时间；只提示人工核查。
+        if not explicit:
+            has_question=any(re.search(r'时间(?!戳)|日期|时刻|何时',question['reasoning'])
+                             and any(covers(source,anchor) for source in question['sources'])
+                             for question in result['sections']['pending_evidence'])
+            if not has_question:
+                add('unknown_event_time_question_missing',index,anchor)
+    return {'version':TIMELINE_COMPLETENESS_VERSION,'scope':'validated_facts_literal_events',
+            'status':'needs_review' if diagnostics else ('no_gap_detected' if candidates else 'not_assessed'),
+            'candidate_count':candidates,'completeness_verified':False,'diagnostics':diagnostics}
+
+
 def prepare_request(record, settings):
     sources=build_sources(record)
     data=json.dumps({'context':analysis_context(record),
@@ -519,6 +591,10 @@ def analyze_record(record, settings, store, principal, consent=False, client_fac
             receipt.update(validation_status='failed',validation_error_kind='output_quality',
                            validation_detail=str(exc),validation_diagnostic=exc.diagnostic)
             raise
+        completeness=_assess_timeline_completeness(result,record)
+        result['timeline_completeness']=completeness
+        receipt['timeline_completeness_status']=completeness['status']
+        receipt['timeline_completeness_diagnostics']=deepcopy(completeness['diagnostics'])
         receipt['validation_status']='passed'
         receipt['duration_ms']=round((time.monotonic()-started)*1000)
         result.update(parse_scope={'status':report.get('status','not_recorded'),
