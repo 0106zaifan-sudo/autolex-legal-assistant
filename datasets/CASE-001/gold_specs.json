@@ -1,0 +1,687 @@
+{
+  "version": "case001-gold/1.0",
+  "status": "助手依据统一设定拟定的人工评审用规范答案草案；非被测系统输出，未外部专家审核",
+  "items": [
+    {
+      "id": "G001",
+      "expected_judgment": "仅记录现场栏目08:30，事故真实绝对时间待核实；该分钟来自驾驶人口述。",
+      "citations": [
+        {
+          "document_id": "D01",
+          "quote": "事故时间栏目08:30来自P01口述，仅按分钟填写，未作时钟校核。"
+        },
+        {
+          "document_id": "D02",
+          "quote": "问：事故何时发生？答：看手机大约08:30，不能回忆准确秒数。"
+        }
+      ],
+      "review_reason": "到场记录与驾驶人口述不构成两个独立时钟；区分记载与事实真实性。",
+      "forbidden_inferences": [
+        "确认事故真实发生于08:30整",
+        "给分钟补00秒",
+        "用作者T_REF补事故秒数"
+      ],
+      "test_categories": [
+        "fact_vs_claim",
+        "clock_domain",
+        "source_dependency"
+      ],
+      "evaluation_mode": "manual_semantic",
+      "offline_rule_check": null
+    },
+    {
+      "id": "G002",
+      "expected_judgment": "D01与D04首行存在1分钟字面差；真实时刻不可可靠比较，不选最终时间。",
+      "citations": [
+        {
+          "document_id": "D01",
+          "quote": "事件编号：CASE-001-E01；现场记录：2026年10月18日08:30车辆发生碰撞。"
+        },
+        {
+          "document_id": "D04",
+          "quote": "事件编号：CASE-001-E01；摘要：2026年10月18日08:31车辆发生碰撞。"
+        }
+      ],
+      "review_reason": "相同候选事件编号、相同分钟精度可展示文本算术；时钟与字段来源未认证。",
+      "forbidden_inferences": [
+        "宣布其中一个时间正确",
+        "认为实际碰撞相差一分钟",
+        "以字面差确定事故因果"
+      ],
+      "test_categories": [
+        "time_literal_difference",
+        "clock_domain"
+      ],
+      "evaluation_mode": "rule_and_manual",
+      "offline_rule_check": {
+        "kind": "time_pair",
+        "left": "D01",
+        "right": "D04",
+        "literal_delta_seconds": 60,
+        "reliable_comparison": false
+      }
+    },
+    {
+      "id": "G003",
+      "expected_judgment": "D04的08:31是接报字段二次转录，不能用D04与D08互证实际事故时刻。",
+      "citations": [
+        {
+          "document_id": "D04",
+          "quote": "首行是事故时刻汇总栏；08:31转录自IN-01接报分钟，不是EDR绝对时钟。"
+        },
+        {
+          "document_id": "D08",
+          "quote": "D04的08:31汇总值抄自IN-01，不是另一设备测得的碰撞时刻。"
+        }
+      ],
+      "review_reason": "两材料共同根来源IN-01，且接报事件与碰撞事件不同。",
+      "forbidden_inferences": [
+        "把两个文件当作独立设备时间",
+        "把08:31接报改成08:31碰撞"
+      ],
+      "test_categories": [
+        "secondary_citation",
+        "source_dependency",
+        "event_role"
+      ],
+      "evaluation_mode": "manual_semantic",
+      "offline_rule_check": null
+    },
+    {
+      "id": "G004",
+      "expected_judgment": "驾驶人未收到是单方主张；不证明提示未物理输出。",
+      "citations": [
+        {
+          "document_id": "D02",
+          "quote": "驾驶人主张：我没有听到提示音，也没注意到提示图标。"
+        },
+        {
+          "document_id": "D02",
+          "quote": "本笔录不证明车机没有输出，也不证明驾驶人始终保持注意。"
+        }
+      ],
+      "review_reason": "感知/回忆与输出是不同命题；未听见不等于设备未发出。",
+      "forbidden_inferences": [
+        "确认企业没有发出提示",
+        "确认驾驶人一直专心驾驶"
+      ],
+      "test_categories": [
+        "fact_vs_claim",
+        "proposition_stage"
+      ],
+      "evaluation_mode": "manual_semantic",
+      "offline_rule_check": null
+    },
+    {
+      "id": "G005",
+      "expected_judgment": "系统发出与驾驶人收到属于不同环节，只能关联核查，不能直接判矛盾。",
+      "citations": [
+        {
+          "document_id": "D03",
+          "quote": "事件编号：CASE-001-E01；系统已发出接管提示。"
+        },
+        {
+          "document_id": "D02",
+          "quote": "事件编号：CASE-001-E01；驾驶人未收到接管提示。"
+        }
+      ],
+      "review_reason": "发出指令不等于接收或感知，来源均须人工审查。",
+      "forbidden_inferences": [
+        "将两句话直接归为同命题互相否定",
+        "把发出当作送达驾驶人"
+      ],
+      "test_categories": [
+        "proposition_stage",
+        "cross_document_relation"
+      ],
+      "evaluation_mode": "rule_and_manual",
+      "offline_rule_check": {
+        "kind": "predicate_pair",
+        "left": "D03",
+        "right": "D02",
+        "assessment_type": "related",
+        "rule": "different_behavior_stages"
+      }
+    },
+    {
+      "id": "G006",
+      "expected_judgment": "企业称驾驶人已收到与驾驶人未收到是相反主张，可列不一致候选，不能确认为事实矛盾。",
+      "citations": [
+        {
+          "document_id": "D03",
+          "quote": "企业主张：驾驶人已收到接管提示。"
+        },
+        {
+          "document_id": "D02",
+          "quote": "事件编号：CASE-001-E01；驾驶人未收到接管提示。"
+        }
+      ],
+      "review_reason": "需阅读全文确定同一字面主体与事故；企业依据仅发送/入队，证明力有限。",
+      "forbidden_inferences": [
+        "任选一方为真实",
+        "认定驾驶人撒谎",
+        "把未独立证明的收到升级事实"
+      ],
+      "test_categories": [
+        "opposite_claims",
+        "source_dependency",
+        "fact_vs_claim"
+      ],
+      "evaluation_mode": "manual_semantic",
+      "offline_rule_check": null
+    },
+    {
+      "id": "G007",
+      "expected_judgment": "毫秒原文保留；现有Schema不支持毫秒精度时标未知，不能截小数使其通过。",
+      "citations": [
+        {
+          "document_id": "D05",
+          "quote": "C_ADAS=2026-10-18 08:30:24.200；CMD_EMIT；command_id=C-731。"
+        },
+        {
+          "document_id": "D06",
+          "quote": "seq=2101；C_HMI=2026-10-18 08:30:14.250；CMD_RX；id=C-731。"
+        }
+      ],
+      "review_reason": "旧时间绑定不支持该额外精度，合法处理为未知且保留完整来源。",
+      "forbidden_inferences": [
+        "删掉.200或.250",
+        "将毫秒伪装为second",
+        "用另一个事件时间代替"
+      ],
+      "test_categories": [
+        "time_precision",
+        "evidence_binding",
+        "unsupported_precision"
+      ],
+      "evaluation_mode": "manual_semantic",
+      "offline_rule_check": null
+    },
+    {
+      "id": "G008",
+      "expected_judgment": "C-731支持关联线索，但跨未校准时钟不能计算真实延迟或先后。",
+      "citations": [
+        {
+          "document_id": "D05",
+          "quote": "车辆头字段为SIM-CASE001-V01，时钟域为C_ADAS，未作跨设备校时。"
+        },
+        {
+          "document_id": "D06",
+          "quote": "车辆头字段为SIM-CASE001-V01，时钟域C_HMI，未与C_ADAS校准。"
+        }
+      ],
+      "review_reason": "命令ID相同与时钟同基准是两回事，毫秒差也不等于网络时延。",
+      "forbidden_inferences": [
+        "计算50毫秒真实传输延迟",
+        "推定时钟固定相差10秒",
+        "用作者偏移校准"
+      ],
+      "test_categories": [
+        "clock_domain",
+        "command_link",
+        "prohibited_calibration"
+      ],
+      "evaluation_mode": "manual_semantic",
+      "offline_rule_check": null
+    },
+    {
+      "id": "G009",
+      "expected_judgment": "CMD_RX只说明车机服务的记录，不是驾驶人接收或感知。",
+      "citations": [
+        {
+          "document_id": "D06",
+          "quote": "CMD_RX指车机服务收到指令，不是驾驶人收到或感知提示。"
+        }
+      ],
+      "review_reason": "技术接收主体与人类接收主体不同。",
+      "forbidden_inferences": [
+        "认定驾驶人已经收到",
+        "把服务接收当作物理显示完成"
+      ],
+      "test_categories": [
+        "proposition_stage",
+        "subject_identity"
+      ],
+      "evaluation_mode": "manual_semantic",
+      "offline_rule_check": null
+    },
+    {
+      "id": "G010",
+      "expected_judgment": "RENDER_REQUEST为入队记录，物理输出、接收与感知仍待核实。",
+      "citations": [
+        {
+          "document_id": "D06",
+          "quote": "RENDER_REQUEST只是渲染请求入队，不是显示或声音完成回执。"
+        },
+        {
+          "document_id": "D03",
+          "quote": "企业意见：提示已正常输出，驾驶人应当已经感知。"
+        }
+      ],
+      "review_reason": "企业从入队推到感知是刻意设置的过度推断。",
+      "forbidden_inferences": [
+        "确认声光已正常输出",
+        "确认驾驶人应当感知"
+      ],
+      "test_categories": [
+        "over_inference",
+        "proposition_stage"
+      ],
+      "evaluation_mode": "manual_semantic",
+      "offline_rule_check": null
+    },
+    {
+      "id": "G011",
+      "expected_judgment": "序号2103—2106共四个序号缺失，仅说明摘录缺口及原因待核实。",
+      "citations": [
+        {
+          "document_id": "D06",
+          "quote": "摘录中缺seq=2103至2106四个序号，缺口原因未核实。"
+        }
+      ],
+      "review_reason": "离散序号与时间段不是同一概念，可能筛选、旋转等，不能任选原因。",
+      "forbidden_inferences": [
+        "说缺了5条",
+        "认定日志被故意删除",
+        "断言没有提示事件"
+      ],
+      "test_categories": [
+        "record_gap",
+        "sequence_count",
+        "completeness"
+      ],
+      "evaluation_mode": "manual_semantic",
+      "offline_rule_check": null
+    },
+    {
+      "id": "G012",
+      "expected_judgment": "未见输出完成回执不等于现实中没有输出或没有完整日志。",
+      "citations": [
+        {
+          "document_id": "D06",
+          "quote": "未见DISPLAY_ACK或AUDIO_DONE条目，不能认定现实中未输出。"
+        },
+        {
+          "document_id": "D06",
+          "quote": "本页为筛选摘录，未提交完整缓存与存储镜像；真实性仍待核验。"
+        }
+      ],
+      "review_reason": "限制检查范围，不能以摘录缺失证明现实消极事实。",
+      "forbidden_inferences": [
+        "断言设备绝对未输出",
+        "断言原始日志不存在"
+      ],
+      "test_categories": [
+        "missingness_scope",
+        "completeness"
+      ],
+      "evaluation_mode": "manual_semantic",
+      "offline_rule_check": null
+    },
+    {
+      "id": "G013",
+      "expected_judgment": "第2107条缺车辆绑定，不能仅依相邻序号归入V01。",
+      "citations": [
+        {
+          "document_id": "D06",
+          "quote": "第2107条未含车辆绑定字段，不能仅凭相邻序号归入V01。"
+        }
+      ],
+      "review_reason": "归属需要车辆/设备/导出链证明，不能用文件名替代。",
+      "forbidden_inferences": [
+        "自动确认该条属于本车",
+        "由BUFFER_ROTATE证明本车发生某故障"
+      ],
+      "test_categories": [
+        "source_identity",
+        "cross_document_contamination"
+      ],
+      "evaluation_mode": "manual_semantic",
+      "offline_rule_check": null
+    },
+    {
+      "id": "G014",
+      "expected_judgment": "EDR摘要不含ADAS、声光或感知字段，不能据其证明功能全程开启或未响应。",
+      "citations": [
+        {
+          "document_id": "D04",
+          "quote": "本EDR字段集中没有ADAS状态、提示输出或驾驶人感知字段。"
+        },
+        {
+          "document_id": "D07",
+          "quote": "本组意见：现有EDR字段不足以支持上述ADAS状态及未响应判断。"
+        }
+      ],
+      "review_reason": "字段边界必须约束证明力，缺某字段也不证明功能未使用。",
+      "forbidden_inferences": [
+        "以EDR推定ADAS一直开启",
+        "以无ADAS字段推定功能关闭",
+        "认定驾驶人未响应"
+      ],
+      "test_categories": [
+        "edr_scope",
+        "probative_limit"
+      ],
+      "evaluation_mode": "manual_semantic",
+      "offline_rule_check": null
+    },
+    {
+      "id": "G015",
+      "expected_judgment": "brake_switch及DRIVER_OVERRIDE仅为测试字段/枚举，不能单独证明人踩制动或AEB。",
+      "citations": [
+        {
+          "document_id": "D04",
+          "quote": "brake_switch是服务制动开关记录，不能独立识别人踩踏板或AEB。"
+        },
+        {
+          "document_id": "D05",
+          "quote": "DRIVER_OVERRIDE是控制器测试枚举，不单独证明真实驾驶人动作。"
+        }
+      ],
+      "review_reason": "需原始数据、字段字典和交叉证据，不把枚举名当事实。",
+      "forbidden_inferences": [
+        "独立认定驾驶人制动时刻",
+        "断言AEB已启动或失效"
+      ],
+      "test_categories": [
+        "field_semantics",
+        "edr_scope",
+        "adas_state"
+      ],
+      "evaluation_mode": "manual_semantic",
+      "offline_rule_check": null
+    },
+    {
+      "id": "G016",
+      "expected_judgment": "D05存在ACTIVE到STANDBY记录；碰撞时ADAS状态仍未完成跨时钟对齐。",
+      "citations": [
+        {
+          "document_id": "D05",
+          "quote": "C_ADAS=2026-10-18 08:30:25.000；ACC=STANDBY；reason=DRIVER_OVERRIDE。"
+        },
+        {
+          "document_id": "D05",
+          "quote": "未提供EDR触发锚点与C_ADAS之间的经验证对时关系。"
+        },
+        {
+          "document_id": "D03",
+          "quote": "企业主张：驾驶辅助功能在事故前全程保持开启。"
+        }
+      ],
+      "review_reason": "状态变化可记载，事故触发属于另一时间域；不能直接判事故时开/关。",
+      "forbidden_inferences": [
+        "认定碰撞时一定处于STANDBY",
+        "认定全程保持属实",
+        "用作者T0对齐状态"
+      ],
+      "test_categories": [
+        "adas_state",
+        "clock_domain",
+        "conditional_inference"
+      ],
+      "evaluation_mode": "manual_semantic",
+      "offline_rule_check": null
+    },
+    {
+      "id": "G017",
+      "expected_judgment": "L2材料为ADAS状态日志，不将DSSAD当作本场景必备证据。",
+      "citations": [
+        {
+          "document_id": "D05",
+          "quote": "L2场景使用ADAS状态日志，本材料不是DSSAD记录。"
+        },
+        {
+          "document_id": "D03",
+          "quote": "功能设定为L2组合驾驶辅助，ACC与LKA不等于无人驾驶。"
+        }
+      ],
+      "review_reason": "不把其他自动驾驶适用背景移植为本测试的事实或法定义务。",
+      "forbidden_inferences": [
+        "要求必然存在DSSAD",
+        "把L2称为无人驾驶",
+        "编造法律上的配置义务"
+      ],
+      "test_categories": [
+        "l2_scope",
+        "no_dssad_assumption"
+      ],
+      "evaluation_mode": "manual_semantic",
+      "offline_rule_check": null
+    },
+    {
+      "id": "G018",
+      "expected_judgment": "D03与D05的相同发送文字保留独立出处，但不是两条独立原始证据。",
+      "citations": [
+        {
+          "document_id": "D03",
+          "quote": "事件编号：CASE-001-E01；系统已发出接管提示。"
+        },
+        {
+          "document_id": "D05",
+          "quote": "事件编号：CASE-001-E01；系统已发出接管提示。"
+        },
+        {
+          "document_id": "D05",
+          "quote": "D03的发送结论复述本页，不构成第二条独立传感器证据。"
+        }
+      ],
+      "review_reason": "同文字不同文件不可合并锚点；不同SHA也不证明信息独立。",
+      "forbidden_inferences": [
+        "把不同文件当独立互证",
+        "仅凭同文合并来源"
+      ],
+      "test_categories": [
+        "duplicate_text_distinct_source",
+        "secondary_citation",
+        "probative_independence"
+      ],
+      "evaluation_mode": "manual_semantic",
+      "offline_rule_check": null
+    },
+    {
+      "id": "G019",
+      "expected_judgment": "第三方报告仅核对送检文本与来源，不认证原始数据、不认定责任或缺陷。",
+      "citations": [
+        {
+          "document_id": "D07",
+          "quote": "委托范围：核对D01至D06及D08的文本和来源，不作责任或缺陷鉴定。"
+        },
+        {
+          "document_id": "D07",
+          "quote": "送检对象均为摘要或副本，没有原始设备镜像、二进制日志及完整签名。"
+        }
+      ],
+      "review_reason": "报告名称不能扩大其鉴定范围与真实性证明力。",
+      "forbidden_inferences": [
+        "把测试报告视为真实司法鉴定意见",
+        "认定已完成缺陷或责任鉴定"
+      ],
+      "test_categories": [
+        "expert_scope",
+        "authenticity",
+        "probative_limit"
+      ],
+      "evaluation_mode": "manual_semantic",
+      "offline_rule_check": null
+    },
+    {
+      "id": "G020",
+      "expected_judgment": "委托方待评议意见是引述对象，不是报告本组结论。",
+      "citations": [
+        {
+          "document_id": "D07",
+          "quote": "委托方待评议意见：EDR可以证明ADAS全程开启，驾驶人未响应。"
+        },
+        {
+          "document_id": "D07",
+          "quote": "本组意见：现有EDR字段不足以支持上述ADAS状态及未响应判断。"
+        }
+      ],
+      "review_reason": "完整保留陈述主体和否定，避免截取前一句冒充鉴定结论。",
+      "forbidden_inferences": [
+        "将委托方意见归于报告结论",
+        "截掉不足以支持等否定"
+      ],
+      "test_categories": [
+        "attribution",
+        "secondary_citation",
+        "negation_preservation"
+      ],
+      "evaluation_mode": "manual_semantic",
+      "offline_rule_check": null
+    },
+    {
+      "id": "G021",
+      "expected_judgment": "保险调查员责任意见是待核查推断，不能自动确认为主要责任。",
+      "citations": [
+        {
+          "document_id": "D08",
+          "quote": "调查员推断：企业既称已提示，驾驶人就应收到且未响应，应承担主要责任。"
+        },
+        {
+          "document_id": "D08",
+          "quote": "上述为待复核意见，不是责任认定；未进行法律适用或驾驶行为鉴定。"
+        }
+      ],
+      "review_reason": "多环节跳跃推断且非独立证据；法律责任不由本整理系统认定。",
+      "forbidden_inferences": [
+        "自动认定主要或全部责任",
+        "编造法条、裁判或鉴定依据"
+      ],
+      "test_categories": [
+        "liability_boundary",
+        "over_inference",
+        "no_fabricated_law"
+      ],
+      "evaluation_mode": "manual_semantic",
+      "offline_rule_check": null
+    },
+    {
+      "id": "G022",
+      "expected_judgment": "到场、接报与报告编制是不同事件，不能借其时间补碰撞。",
+      "citations": [
+        {
+          "document_id": "D01",
+          "quote": "记录员于08:42到场，未亲眼观察碰撞接触瞬间。"
+        },
+        {
+          "document_id": "D08",
+          "quote": "事件编号：CASE-001-E01；保险调查记载：2026年10月18日08:31收到报案。"
+        },
+        {
+          "document_id": "D04",
+          "quote": "文内编制时间：2026年10月20日11:00；编制者：虚构数据提取测试组。"
+        }
+      ],
+      "review_reason": "分清事故、材料形成与手续事件，未知秒数保持未知。",
+      "forbidden_inferences": [
+        "用08:42或编制日期作碰撞时间",
+        "将接报必然当碰撞时刻"
+      ],
+      "test_categories": [
+        "event_role",
+        "timeline_binding",
+        "unknown_time"
+      ],
+      "evaluation_mode": "manual_semantic",
+      "offline_rule_check": null
+    },
+    {
+      "id": "G023",
+      "expected_judgment": "文件SHA仅验证测试文件一致性，不认证车载数据真实性或完整提取链。",
+      "citations": [
+        {
+          "document_id": "D03",
+          "quote": "原始二进制日志、设备镜像和完整性签名未随本说明提供。"
+        },
+        {
+          "document_id": "D04",
+          "quote": "原始二进制数据及提取过程镜像未提供，摘要为二次转写。"
+        }
+      ],
+      "review_reason": "区分文档包哈希与硬件原始数据、提取来源认证。",
+      "forbidden_inferences": [
+        "宣称摘要经硬件原始哈希认证",
+        "自动确认不存在篡改"
+      ],
+      "test_categories": [
+        "authenticity",
+        "chain_of_custody",
+        "hash_scope"
+      ],
+      "evaluation_mode": "manual_semantic",
+      "offline_rule_check": null
+    },
+    {
+      "id": "G024",
+      "expected_judgment": "后续报告引用企业内容不增加独立原始数据证明力。",
+      "citations": [
+        {
+          "document_id": "D07",
+          "quote": "本报告复述D03内容不增加原始数据独立性，不代表认证企业原始数据。"
+        },
+        {
+          "document_id": "D08",
+          "quote": "本报告参考D02和D03，未获得道路连续视频或完整车载原始数据。"
+        }
+      ],
+      "review_reason": "识别D05/D06→D03→D07/D08的引用链，不能按文件数量投票。",
+      "forbidden_inferences": [
+        "按支持文件数量投票判真实",
+        "将二次引用看成新传感器观测"
+      ],
+      "test_categories": [
+        "secondary_citation",
+        "source_dependency",
+        "probative_independence"
+      ],
+      "evaluation_mode": "manual_semantic",
+      "offline_rule_check": null
+    },
+    {
+      "id": "G025",
+      "expected_judgment": "可以提出原始镜像、字段字典、时钟关系及各提示环节的核查问题，但不假定它们已存在。",
+      "citations": [
+        {
+          "document_id": "D07",
+          "quote": "事故绝对时刻、碰撞时ADAS状态、提示输出及驾驶人感知仍待核实。"
+        }
+      ],
+      "review_reason": "仅生成有材料依据的待核查问题，缺项不补事实。",
+      "forbidden_inferences": [
+        "虚构未提供的设备镜像或鉴定结论",
+        "自动加入没有来源的EDR/DSSAD资料"
+      ],
+      "test_categories": [
+        "pending_evidence",
+        "missingness_scope"
+      ],
+      "evaluation_mode": "manual_semantic",
+      "offline_rule_check": null
+    },
+    {
+      "id": "G026",
+      "expected_judgment": "八份材料必须分批；Gold/作者设计不得作为模型输入。",
+      "citations": [
+        {
+          "document_id": "D07",
+          "quote": "本文件是模拟技术鉴定测试报告，不是真实司法鉴定意见，无资质或印章。"
+        }
+      ],
+      "review_reason": "数据与答案隔离，联合请求遵守2—4文件及预算，不执行付费调用。",
+      "forbidden_inferences": [
+        "一次发送八份",
+        "把作者偏移或答案文件送入模型",
+        "以离线通过宣称真实模型能力"
+      ],
+      "test_categories": [
+        "batch_limits",
+        "evaluation_hygiene"
+      ],
+      "evaluation_mode": "offline_preflight",
+      "offline_rule_check": {
+        "kind": "dataset_hygiene"
+      }
+    }
+  ]
+}

@@ -1,0 +1,177 @@
+{
+  "version": "case001-batches/1.0",
+  "provider_for_budget": "deepseek",
+  "model_for_budget": "deepseek-flash",
+  "execute_api": false,
+  "authorization": "未来每批需单独人工授权与解析风险确认，本配置不提供调用授权",
+  "suggested_windows": [
+    [
+      "B01",
+      "B02",
+      "B03"
+    ],
+    [
+      "B04",
+      "B05"
+    ]
+  ],
+  "cooldown_seconds_minimum": 30,
+  "batches": [
+    {
+      "id": "B01",
+      "documents": [
+        "D01",
+        "D02",
+        "D03",
+        "D04"
+      ],
+      "gold_focus": [
+        "G001",
+        "G002",
+        "G004",
+        "G005",
+        "G006"
+      ],
+      "deferred_missing_sources": [
+        "G014",
+        "G015"
+      ],
+      "expected": {
+        "schema": "multidoc-analysis/1.1",
+        "all_outputs": "待人工核验",
+        "must_not_choose_final_collision_time": true,
+        "no_automatic_liability": true,
+        "no_cross_clock_calibration": true
+      },
+      "execution": "offline_preflight_only",
+      "real_api_calls": 0
+    },
+    {
+      "id": "B02",
+      "documents": [
+        "D03",
+        "D05",
+        "D06",
+        "D07"
+      ],
+      "gold_focus": [
+        "G007",
+        "G008",
+        "G009",
+        "G010",
+        "G011",
+        "G012",
+        "G013",
+        "G016",
+        "G017",
+        "G018",
+        "G019",
+        "G020"
+      ],
+      "deferred_missing_sources": [],
+      "expected": {
+        "schema": "multidoc-analysis/1.1",
+        "all_outputs": "待人工核验",
+        "must_not_choose_final_collision_time": true,
+        "no_automatic_liability": true,
+        "no_cross_clock_calibration": true
+      },
+      "execution": "offline_preflight_only",
+      "real_api_calls": 0
+    },
+    {
+      "id": "B03",
+      "documents": [
+        "D01",
+        "D04",
+        "D07",
+        "D08"
+      ],
+      "gold_focus": [
+        "G002",
+        "G003",
+        "G014",
+        "G019",
+        "G020",
+        "G021",
+        "G022",
+        "G024"
+      ],
+      "deferred_missing_sources": [
+        "G023"
+      ],
+      "expected": {
+        "schema": "multidoc-analysis/1.1",
+        "all_outputs": "待人工核验",
+        "must_not_choose_final_collision_time": true,
+        "no_automatic_liability": true,
+        "no_cross_clock_calibration": true
+      },
+      "execution": "offline_preflight_only",
+      "real_api_calls": 0
+    },
+    {
+      "id": "B04",
+      "documents": [
+        "D02",
+        "D03",
+        "D06",
+        "D08"
+      ],
+      "gold_focus": [
+        "G004",
+        "G005",
+        "G006",
+        "G009",
+        "G010",
+        "G011",
+        "G012",
+        "G013",
+        "G021"
+      ],
+      "deferred_missing_sources": [
+        "G024"
+      ],
+      "expected": {
+        "schema": "multidoc-analysis/1.1",
+        "all_outputs": "待人工核验",
+        "must_not_choose_final_collision_time": true,
+        "no_automatic_liability": true,
+        "no_cross_clock_calibration": true
+      },
+      "execution": "offline_preflight_only",
+      "real_api_calls": 0
+    },
+    {
+      "id": "B05",
+      "documents": [
+        "D03",
+        "D04",
+        "D05",
+        "D07"
+      ],
+      "gold_focus": [
+        "G014",
+        "G015",
+        "G019",
+        "G020",
+        "G025",
+        "G016",
+        "G017",
+        "G023"
+      ],
+      "deferred_missing_sources": [
+        "G007"
+      ],
+      "expected": {
+        "schema": "multidoc-analysis/1.1",
+        "all_outputs": "待人工核验",
+        "must_not_choose_final_collision_time": true,
+        "no_automatic_liability": true,
+        "no_cross_clock_calibration": true
+      },
+      "execution": "offline_preflight_only",
+      "real_api_calls": 0
+    }
+  ]
+}

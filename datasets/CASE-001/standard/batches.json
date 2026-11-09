@@ -1,0 +1,366 @@
+{
+  "authorization": "未来每批需单独人工授权与解析风险确认，本配置不提供调用授权",
+  "batches": [
+    {
+      "deferred_missing_sources": [
+        "G014",
+        "G015"
+      ],
+      "documents": [
+        "D01",
+        "D02",
+        "D03",
+        "D04"
+      ],
+      "execution": "offline_preflight_only",
+      "expected": {
+        "all_outputs": "待人工核验",
+        "must_not_choose_final_collision_time": true,
+        "no_automatic_liability": true,
+        "no_cross_clock_calibration": true,
+        "schema": "multidoc-analysis/1.1"
+      },
+      "file_names": [
+        "模拟_CASE-001_D01_现场记录.pdf",
+        "模拟_CASE-001_D02_驾驶人询问笔录.docx",
+        "模拟_CASE-001_D03_企业技术说明.pdf",
+        "模拟_CASE-001_D04_EDR摘要.pdf"
+      ],
+      "gold_focus": [
+        "G001",
+        "G002",
+        "G004",
+        "G005",
+        "G006"
+      ],
+      "id": "B01",
+      "observed_candidate_coverage": {
+        "available_candidate_ids": [
+          "CE_9143557fb6a54c27167a4947",
+          "CE_e18c1c9fb0e2b5ac5fa0d8c0",
+          "CE_718b11e52bc8df992f0796ab",
+          "CE_b83abf27dfc27ffd72bf9875"
+        ],
+        "excluded_count": 79,
+        "not_a_complete_timeline": true
+      },
+      "preflight": {
+        "batch_sha256": "e703116da95462bb1f8cad011acbb5c469b754e065e4fef9b3b941524ab70110",
+        "candidate_count": 4,
+        "input_chars": 2015,
+        "original_characters": 1940,
+        "passed": true,
+        "request_bytes": 72094,
+        "required_coverage_acknowledgements": [
+          "D01",
+          "D03",
+          "D04"
+        ],
+        "source_blocks": 62
+      },
+      "real_api_calls": 0
+    },
+    {
+      "deferred_missing_sources": [],
+      "documents": [
+        "D03",
+        "D05",
+        "D06",
+        "D07"
+      ],
+      "execution": "offline_preflight_only",
+      "expected": {
+        "all_outputs": "待人工核验",
+        "must_not_choose_final_collision_time": true,
+        "no_automatic_liability": true,
+        "no_cross_clock_calibration": true,
+        "schema": "multidoc-analysis/1.1"
+      },
+      "file_names": [
+        "模拟_CASE-001_D03_企业技术说明.pdf",
+        "模拟_CASE-001_D05_ADAS状态日志.pdf",
+        "模拟_CASE-001_D06_车机提示日志.docx",
+        "模拟_CASE-001_D07_第三方技术鉴定报告.docx"
+      ],
+      "gold_focus": [
+        "G007",
+        "G008",
+        "G009",
+        "G010",
+        "G011",
+        "G012",
+        "G013",
+        "G016",
+        "G017",
+        "G018",
+        "G019",
+        "G020"
+      ],
+      "id": "B02",
+      "observed_candidate_coverage": {
+        "available_candidate_ids": [
+          "CE_c9df1737e1f7f76b3d49e717",
+          "CE_ab51091eebac5c8f0264e971",
+          "CE_0e230e369bc35ecc6ea026f9",
+          "CE_2ba7f6bef45106533ea9c30b",
+          "CE_718b11e52bc8df992f0796ab",
+          "CE_20839fb301070122f5e8728b",
+          "CE_492b48343354a736137e68b0",
+          "CE_56f5380afb26542671d872f4",
+          "CE_6fea737f8ccf2dd3c7093bde"
+        ],
+        "excluded_count": 80,
+        "not_a_complete_timeline": true
+      },
+      "preflight": {
+        "batch_sha256": "f94456e1cb8061acab42b615c2dada34edd23e74828d700acc8e1ed722274331",
+        "candidate_count": 9,
+        "input_chars": 2422,
+        "original_characters": 2211,
+        "passed": true,
+        "request_bytes": 82869,
+        "required_coverage_acknowledgements": [
+          "D03",
+          "D05"
+        ],
+        "source_blocks": 67
+      },
+      "real_api_calls": 0
+    },
+    {
+      "deferred_missing_sources": [
+        "G023"
+      ],
+      "documents": [
+        "D01",
+        "D04",
+        "D07",
+        "D08"
+      ],
+      "execution": "offline_preflight_only",
+      "expected": {
+        "all_outputs": "待人工核验",
+        "must_not_choose_final_collision_time": true,
+        "no_automatic_liability": true,
+        "no_cross_clock_calibration": true,
+        "schema": "multidoc-analysis/1.1"
+      },
+      "file_names": [
+        "模拟_CASE-001_D01_现场记录.pdf",
+        "模拟_CASE-001_D04_EDR摘要.pdf",
+        "模拟_CASE-001_D07_第三方技术鉴定报告.docx",
+        "模拟_CASE-001_D08_保险调查报告.docx"
+      ],
+      "gold_focus": [
+        "G002",
+        "G003",
+        "G014",
+        "G019",
+        "G020",
+        "G021",
+        "G022",
+        "G024"
+      ],
+      "id": "B03",
+      "observed_candidate_coverage": {
+        "available_candidate_ids": [
+          "CE_9143557fb6a54c27167a4947",
+          "CE_b83abf27dfc27ffd72bf9875",
+          "CE_20839fb301070122f5e8728b",
+          "CE_492b48343354a736137e68b0",
+          "CE_56f5380afb26542671d872f4",
+          "CE_6fea737f8ccf2dd3c7093bde",
+          "CE_722f1076951050a17da7cb33",
+          "CE_a96a08e91596a780e949e1b7",
+          "CE_63286d2cbaf062b0c899f647"
+        ],
+        "excluded_count": 74,
+        "not_a_complete_timeline": true
+      },
+      "preflight": {
+        "batch_sha256": "f9e1d1c643302320903d41f7550aa2be0e8a382967b694eca4c1d76bce125603",
+        "candidate_count": 9,
+        "input_chars": 2368,
+        "original_characters": 2077,
+        "passed": true,
+        "request_bytes": 80272,
+        "required_coverage_acknowledgements": [
+          "D01",
+          "D04"
+        ],
+        "source_blocks": 64
+      },
+      "real_api_calls": 0
+    },
+    {
+      "deferred_missing_sources": [
+        "G024"
+      ],
+      "documents": [
+        "D02",
+        "D03",
+        "D06",
+        "D08"
+      ],
+      "execution": "offline_preflight_only",
+      "expected": {
+        "all_outputs": "待人工核验",
+        "must_not_choose_final_collision_time": true,
+        "no_automatic_liability": true,
+        "no_cross_clock_calibration": true,
+        "schema": "multidoc-analysis/1.1"
+      },
+      "file_names": [
+        "模拟_CASE-001_D02_驾驶人询问笔录.docx",
+        "模拟_CASE-001_D03_企业技术说明.pdf",
+        "模拟_CASE-001_D06_车机提示日志.docx",
+        "模拟_CASE-001_D08_保险调查报告.docx"
+      ],
+      "gold_focus": [
+        "G004",
+        "G005",
+        "G006",
+        "G009",
+        "G010",
+        "G011",
+        "G012",
+        "G013",
+        "G021"
+      ],
+      "id": "B04",
+      "observed_candidate_coverage": {
+        "available_candidate_ids": [
+          "CE_ab51091eebac5c8f0264e971",
+          "CE_0e230e369bc35ecc6ea026f9",
+          "CE_2ba7f6bef45106533ea9c30b",
+          "CE_e18c1c9fb0e2b5ac5fa0d8c0",
+          "CE_718b11e52bc8df992f0796ab",
+          "CE_722f1076951050a17da7cb33",
+          "CE_a96a08e91596a780e949e1b7",
+          "CE_63286d2cbaf062b0c899f647"
+        ],
+        "excluded_count": 76,
+        "not_a_complete_timeline": true
+      },
+      "preflight": {
+        "batch_sha256": "55d4588715fe35b00ac5dc6a942bb5b8fdb5d39c34f092aa7642b1974fc93059",
+        "candidate_count": 8,
+        "input_chars": 2174,
+        "original_characters": 1997,
+        "passed": true,
+        "request_bytes": 81646,
+        "required_coverage_acknowledgements": [
+          "D03"
+        ],
+        "source_blocks": 64
+      },
+      "real_api_calls": 0
+    },
+    {
+      "deferred_missing_sources": [
+        "G007"
+      ],
+      "documents": [
+        "D03",
+        "D04",
+        "D05",
+        "D07"
+      ],
+      "execution": "offline_preflight_only",
+      "expected": {
+        "all_outputs": "待人工核验",
+        "must_not_choose_final_collision_time": true,
+        "no_automatic_liability": true,
+        "no_cross_clock_calibration": true,
+        "schema": "multidoc-analysis/1.1"
+      },
+      "file_names": [
+        "模拟_CASE-001_D03_企业技术说明.pdf",
+        "模拟_CASE-001_D04_EDR摘要.pdf",
+        "模拟_CASE-001_D05_ADAS状态日志.pdf",
+        "模拟_CASE-001_D07_第三方技术鉴定报告.docx"
+      ],
+      "gold_focus": [
+        "G014",
+        "G015",
+        "G019",
+        "G020",
+        "G025",
+        "G016",
+        "G017",
+        "G023"
+      ],
+      "id": "B05",
+      "observed_candidate_coverage": {
+        "available_candidate_ids": [
+          "CE_c9df1737e1f7f76b3d49e717",
+          "CE_718b11e52bc8df992f0796ab",
+          "CE_b83abf27dfc27ffd72bf9875",
+          "CE_20839fb301070122f5e8728b",
+          "CE_492b48343354a736137e68b0",
+          "CE_56f5380afb26542671d872f4",
+          "CE_6fea737f8ccf2dd3c7093bde"
+        ],
+        "excluded_count": 82,
+        "not_a_complete_timeline": true
+      },
+      "preflight": {
+        "batch_sha256": "c073103873736a7d8d113079f39ea2afc1e0f821ee5b89899cca1dcb42341c5c",
+        "candidate_count": 7,
+        "input_chars": 2394,
+        "original_characters": 2212,
+        "passed": true,
+        "request_bytes": 78820,
+        "required_coverage_acknowledgements": [
+          "D03",
+          "D04",
+          "D05"
+        ],
+        "source_blocks": 67
+      },
+      "real_api_calls": 0
+    }
+  ],
+  "budget_windows": [
+    {
+      "batches": [
+        "B01",
+        "B02",
+        "B03"
+      ],
+      "budget_only_not_authorized": true,
+      "input_characters": 6805,
+      "minimum_between_calls_seconds": 30,
+      "planned_calls": 3,
+      "request_bytes": 235235
+    },
+    {
+      "batches": [
+        "B04",
+        "B05"
+      ],
+      "budget_only_not_authorized": true,
+      "input_characters": 4568,
+      "minimum_between_calls_seconds": 30,
+      "planned_calls": 2,
+      "request_bytes": 160466
+    }
+  ],
+  "cooldown_seconds_minimum": 30,
+  "eight_document_request_blocked": true,
+  "execute_api": false,
+  "model_for_budget": "deepseek-flash",
+  "provider_for_budget": "deepseek",
+  "suggested_windows": [
+    [
+      "B01",
+      "B02",
+      "B03"
+    ],
+    [
+      "B04",
+      "B05"
+    ]
+  ],
+  "version": "case001-batches/1.0"
+}

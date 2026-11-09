@@ -1,0 +1,73 @@
+{
+  "all_batches_within_limits": true,
+  "all_citations_uniquely_bound": true,
+  "dataset_version": "standard/1.0",
+  "gold_items": 26,
+  "known_limits": [
+    "PDF表格覆盖仍未核验，必须确认风险；标准版只有文本层，不代表PDF无表格",
+    "首个保守事件候选不保证时间线完整；毫秒/相对EDR/复杂语义多需人工核查",
+    "command_id、二次引用、状态语义与证明独立性不在当前闭集规则完整覆盖内",
+    "本轮未执行任何真实或模拟模型响应验收，不给出模型成功率"
+  ],
+  "limited_rule_checks": [
+    {
+      "check": {
+        "kind": "time_pair",
+        "left": "D01",
+        "literal_delta_seconds": 60,
+        "reliable_comparison": false,
+        "right": "D04"
+      },
+      "gold_id": "G002",
+      "passed": true
+    },
+    {
+      "check": {
+        "assessment_type": "related",
+        "kind": "predicate_pair",
+        "left": "D03",
+        "right": "D02",
+        "rule": "different_behavior_stages"
+      },
+      "gold_id": "G005",
+      "passed": true
+    },
+    {
+      "check": {
+        "kind": "dataset_hygiene"
+      },
+      "gold_id": "G026",
+      "passed": true
+    }
+  ],
+  "manual_semantic_items_not_executed": [
+    "G001",
+    "G003",
+    "G004",
+    "G006",
+    "G007",
+    "G008",
+    "G009",
+    "G010",
+    "G011",
+    "G012",
+    "G013",
+    "G014",
+    "G015",
+    "G016",
+    "G017",
+    "G018",
+    "G019",
+    "G020",
+    "G021",
+    "G022",
+    "G023",
+    "G024",
+    "G025"
+  ],
+  "mock_model_calls": 0,
+  "model_semantic_accuracy": "not_measured",
+  "parsed_documents": 8,
+  "quota_database_opened": false,
+  "real_model_calls": 0
+}

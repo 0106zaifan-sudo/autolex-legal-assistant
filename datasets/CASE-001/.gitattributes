@@ -1,0 +1,4 @@
+# Generated artifacts must keep exact bytes for SHA256 verification.
+standard/** -text
+standard/materials/*.pdf binary
+standard/materials/*.docx binary
