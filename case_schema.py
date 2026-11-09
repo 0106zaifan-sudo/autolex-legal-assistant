@@ -93,7 +93,7 @@ class HumanReview(Model):
 
 
 class CaseBundle(Model):
-    schema_version: Literal['1.0'] = '1.0'
+    schema_version: Literal['1.0', '1.1'] = '1.1'
     case_id: str
     title: str  # 操作者标签，不是自动提取/确认的法律案件名称。
     basic_info: dict[str, CaseField] = Field(default_factory=dict)
@@ -106,3 +106,38 @@ class CaseBundle(Model):
     timeline: list[CaseEvent] = Field(default_factory=list)
     pending_items: list[PendingItem] = Field(default_factory=list)
     reviews: list[HumanReview] = Field(default_factory=list)
+    relations: list["EvidenceRelation"] = Field(default_factory=list)
+    relation_reviews: list["RelationReview"] = Field(default_factory=list)
+
+RelationType = Literal['support_candidate','inconsistency_candidate','related','needs_verification']
+
+class EvidenceRelation(Model):
+    relation_id: str
+    left_id: str
+    right_id: str
+    relation_type: RelationType
+    status: Literal['candidate'] = 'candidate'
+    method: str
+    reason: str
+    limitations: str = '仅字面对照；来源真实性、时钟基准、完整性及法律意义均待人工核查'
+
+class RelationReview(Model):
+    review_id: str
+    relation_id: str
+    status: Literal['confirmed','modified','rejected','needs_review']
+    relation_type: RelationType
+    reviewer: str
+    reason: str
+    reviewed_at: str
+    previous_review_id: str | None = None
+
+
+def upgrade_case_payload(payload):
+    from copy import deepcopy
+    if payload.get('schema_version') != '1.0' or payload.get('relations') or payload.get('relation_reviews'):
+        raise ValueError('只接受无关系字段的1.0导出；不接受隐含已确认关系')
+    result=deepcopy(payload)
+    result.update(schema_version='1.1',relations=[],relation_reviews=[])
+    return result
+
+CaseBundle.model_rebuild()

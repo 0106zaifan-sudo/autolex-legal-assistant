@@ -1,3 +1,9 @@
+# V2.0-A最新离线验证
+
+294项通过，19.297秒；原267项测试不变，新增27项。详见[多文档说明](docs/MULTIDOC_V2A.md)及[完整日志](docs/multidoc_offline_tests.txt)。真实模型调用0次，不读取Secrets，不部署。
+
+以下保留历史记录。
+
 # 最新：V1.1时间线完整性补丁
 
 2026-11-09（北京时间）；`feature/output-quality-p1-timeline`，基线`e5e0744`。原工作区干净，独立worktree开发。

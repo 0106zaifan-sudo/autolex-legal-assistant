@@ -4,6 +4,10 @@ import io
 import zipfile
 
 SOURCE_FILES = (
+    'evidence_relations.py', 'relation_ui.py', 'make_multidoc_samples.py', 'tests/test_multidoc.py',
+    'docs/MULTIDOC_V2A.md', 'docs/multidoc_offline_tests.txt',
+    'samples_multidoc/模拟_现场记录.pdf', 'samples_multidoc/模拟_驾驶人陈述.docx',
+    'samples_multidoc/模拟_企业说明.docx', 'samples_multidoc/模拟_电子数据摘要.pdf',
     'tests/test_timeline_completeness.py', 'docs/TIMELINE_COMPLETENESS_PATCH.md', 'docs/timeline_completeness_offline_tests.txt',
     'tests/test_output_quality.py', 'docs/OUTPUT_QUALITY_P1.md', 'docs/output_quality_p1_offline_tests.txt',
     'tests/ui_isolation.py', 'tests/test_single_scenario.py',

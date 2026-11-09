@@ -247,5 +247,55 @@ class CaseStore:
             raise CaseError('原文件一致性检查失败')
         return doc.file_name, bytes(doc.original_bytes)
 
+    def link_evidence(self, case_id, left_id, right_id):
+        from evidence_relations import compare_quotes
+        from case_schema import EvidenceRelation
+        case=self._case(case_id)
+        left,right=self._references(case,[left_id,right_id])
+        if left.document_id==right.document_id:
+            raise CaseError('跨文件关系必须引用不同文档')
+        # 改名副本也不作为独立文件互证。
+        if left.document_sha256==right.document_sha256:
+            raise CaseError('相同文件字节的副本不作为跨文件互证')
+        proposal=compare_quotes(left.quote,right.quote)
+        if proposal is None:raise CaseError('没有受支持的共同事件/主题，不生成关系')
+        ids=sorted([left_id,right_id])
+        rid='relation_'+hashlib.sha256(json.dumps([case_id,ids]).encode()).hexdigest()[:24]
+        old=next((r for r in case.relations if r.relation_id==rid),None)
+        if old:return old.model_copy(deep=True)
+        kind,method,reason=proposal
+        relation=EvidenceRelation(relation_id=rid,left_id=ids[0],right_id=ids[1],relation_type=kind,method=method,reason=reason)
+        case.schema_version='1.1'
+        case.relations.append(relation)
+        return relation.model_copy(deep=True)
+
+    def discover_relations(self, case_id):
+        from itertools import combinations
+        from evidence_relations import compare_quotes
+        case=self._case(case_id)
+        # 先完整复核，再写入，避免损坏锚点导致部分发现结果。
+        spans=self._references(case,list(case.evidence)) if case.evidence else []
+        if len(spans)>150:raise CaseError('请将本次审阅证据控制在150条以内')
+        for a,b in combinations(spans,2):
+            if a.document_id!=b.document_id and a.document_sha256!=b.document_sha256 and compare_quotes(a.quote,b.quote):
+                self.link_evidence(case_id,a.evidence_id,b.evidence_id)
+
+    def review_relation(self, case_id, relation_id, status, relation_type, reviewer, reason):
+        from case_schema import RelationReview
+        case=self._case(case_id)
+        relation=next((r for r in case.relations if r.relation_id==relation_id),None)
+        if relation is None:raise CaseError('关系不属于本案')
+        self._references(case,[relation.left_id,relation.right_id])
+        if not reviewer.strip() or not reason.strip():raise CaseError('须填写复核人及具体理由')
+        previous=next((r.review_id for r in reversed(case.relation_reviews) if r.relation_id==relation_id),None)
+        review=RelationReview(review_id=_id('relation_review'),relation_id=relation_id,status=status,
+                              relation_type=relation_type,reviewer=reviewer.strip(),reason=reason.strip(),
+                              reviewed_at=datetime.now(ZoneInfo('Asia/Shanghai')).isoformat(timespec='seconds'),previous_review_id=previous)
+        case.relation_reviews.append(review)
+
     def export_json(self, case_id):
-        return self._case(case_id).model_dump_json(indent=2)
+        case=self._case(case_id)
+        if case.evidence:self._references(case,list(case.evidence))
+        for relation in case.relations:
+            self._references(case,[relation.left_id,relation.right_id])
+        return case.model_dump_json(indent=2)

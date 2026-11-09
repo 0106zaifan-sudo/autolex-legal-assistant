@@ -159,5 +159,7 @@ def render_case_workspace(records, root):
                     st.rerun()
                 except CaseError as exc:
                     st.error(str(exc))
+    from relation_ui import render_relations
+    render_relations(store,cid)
     st.download_button('下载本案结构化 JSON（不内嵌原文件字节）', store.export_json(cid),
                        'AutoLex_案件结构化.json', 'application/json', key='case_export_'+cid)

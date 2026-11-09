@@ -171,3 +171,7 @@ Schema 2.0兼容不变，新增独立prompt_revision/output_quality_version及�
 独立分支`feature/output-quality-p1-timeline`强化Prompt：原文支持的重要事件即使无日期也应列timeline，facts与timeline的合理复用不属于重复。新增只读的timeline_completeness诊断和UI警告，提示重要事件/时间核查问题可能遗漏，不自动补事件或日期；no_gap_detected也不是完整性证明。原金标准、证据绑定及P1质量规则未改。
 
 本轮267项离线测试通过，未调用真实API。根因、完整修改清单及下一次最小复测见[时间线补丁说明](docs/TIMELINE_COMPLETENESS_PATCH.md)。
+
+## V2.0-A多文档证据关系
+
+同案归档多份文件、保存引用后，可离线发现关系候选、并排核对、追加人工审阅并导出1.1案件JSON。候选和人工关系判断均不确认真实性或责任。操作、样本、兼容策略与风险见[多文档说明](docs/MULTIDOC_V2A.md)。
