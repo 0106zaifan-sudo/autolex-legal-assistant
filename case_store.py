@@ -265,7 +265,7 @@ class CaseStore:
         if old:return old.model_copy(deep=True)
         kind,method,reason=proposal
         relation=EvidenceRelation(relation_id=rid,left_id=ids[0],right_id=ids[1],relation_type=kind,method=method,reason=reason)
-        case.schema_version='1.1'
+        if case.schema_version=='1.0':case.schema_version='1.1'
         case.relations.append(relation)
         return relation.model_copy(deep=True)
 

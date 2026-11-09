@@ -93,7 +93,7 @@ class HumanReview(Model):
 
 
 class CaseBundle(Model):
-    schema_version: Literal['1.0', '1.1'] = '1.1'
+    schema_version: Literal['1.0', '1.1', '1.2'] = '1.1'
     case_id: str
     title: str  # 操作者标签，不是自动提取/确认的法律案件名称。
     basic_info: dict[str, CaseField] = Field(default_factory=dict)
@@ -106,6 +106,7 @@ class CaseBundle(Model):
     timeline: list[CaseEvent] = Field(default_factory=list)
     pending_items: list[PendingItem] = Field(default_factory=list)
     reviews: list[HumanReview] = Field(default_factory=list)
+    analysis_receipts: list[dict] = Field(default_factory=list, exclude_if=lambda value: not value)
     relations: list["EvidenceRelation"] = Field(default_factory=list)
     relation_reviews: list["RelationReview"] = Field(default_factory=list)
 
@@ -118,6 +119,7 @@ class EvidenceRelation(Model):
     relation_type: RelationType
     status: Literal['candidate'] = 'candidate'
     method: str
+    ai_origins: list[dict] = Field(default_factory=list, exclude_if=lambda value: not value)  # 非空仅随1.2案件导出
     reason: str
     limitations: str = '仅字面对照；来源真实性、时钟基准、完整性及法律意义均待人工核查'
 

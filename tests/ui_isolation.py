@@ -16,12 +16,14 @@ def isolated_ui_runtime(*, environment=None):
     with patch.object(st,'secrets',memory_secrets), \
          patch.object(Secrets,'_parse_file_path',side_effect=AssertionError('UI tests must not parse local Secrets')) as disk, \
          patch('ai_ui.codespaces_values',side_effect=lambda values,_host: codespaces_values(values,simulated_environment)), \
-         patch('ai_analysis.invoke',side_effect=AssertionError('UI tests must not call model runtime')) as model:
+         patch('ai_analysis.invoke',side_effect=AssertionError('UI tests must not call model runtime')) as model, \
+         patch('multidoc_ai.invoke',side_effect=AssertionError('UI tests must not call multidoc runtime')) as multimodel:
         try:
             yield
         finally:
             disk.assert_not_called()
             model.assert_not_called()
+            multimodel.assert_not_called()
 
 
 class IsolatedUITestCase(unittest.TestCase):

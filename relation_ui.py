@@ -15,8 +15,14 @@ def render_relations(store,cid):
   st.caption('暂无候选；需要不同原始文件的证据锚点。');return
  rid=st.selectbox('选择关系候选',[r.relation_id for r in case.relations],key='relation_'+cid)
  relation=next(r for r in case.relations if r.relation_id==rid)
+ if st.session_state.get('_relation_review_target')!=(cid,rid):
+  st.session_state['_relation_review_target']=(cid,rid)
+  st.session_state['relation_status']='needs_review';st.session_state['relation_type']=relation.relation_type
+  st.session_state['relation_reviewer']='';st.session_state['relation_reason']=''
  st.info(TYPES[relation.relation_type]+' · '+relation.reason)
  st.caption(relation.method+' · '+relation.limitations)
+ if relation.ai_origins:
+  with st.expander('原AI建议及备选摘录来源（均待人工核验）'):st.json(relation.ai_origins)
  for column,eid in zip(st.columns(2),(relation.left_id,relation.right_id)):
   span=case.evidence[eid];doc=case.documents[span.document_id]
   with column:

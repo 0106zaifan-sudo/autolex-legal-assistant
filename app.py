@@ -59,6 +59,8 @@ with st.sidebar:
         st.session_state.pop('_last_ai_receipt', None)
         st.session_state.pop('_show_ai_demo', None)
         st.session_state.pop('_case_store', None)
+        for key in ('_md_result','_md_receipt','_md_error','_md_fingerprint','_md_reset_consent','md_consent'):
+            st.session_state.pop(key,None)
         st.session_state.pop('_parse_failures', None)
         st.rerun()
     st.divider()
@@ -135,4 +137,4 @@ if st.session_state.get('_parse_failures'):
         for fid, failed in st.session_state['_parse_failures'].items():
             st.text(failed['name'])
             render_parse_report(failed['report'], 'failed_report_'+fid)
-render_case_workspace(records, ROOT)
+render_case_workspace(records, ROOT, settings, principal)

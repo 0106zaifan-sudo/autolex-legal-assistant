@@ -20,7 +20,7 @@ def render_parse_report(report, key):
                        'AutoLex_解析报告.json', 'application/json', key=key)
 
 
-def render_case_workspace(records, root):
+def render_case_workspace(records, root, settings=None, principal=None):
     if '_case_store' not in st.session_state:
         st.session_state['_case_store'] = CaseStore()
     store = st.session_state['_case_store']
@@ -159,6 +159,9 @@ def render_case_workspace(records, root):
                     st.rerun()
                 except CaseError as exc:
                     st.error(str(exc))
+    if settings is not None:
+        from multidoc_ui import render_multidoc_ai
+        render_multidoc_ai(store,cid,settings,principal)
     from relation_ui import render_relations
     render_relations(store,cid)
     st.download_button('下载本案结构化 JSON（不内嵌原文件字节）', store.export_json(cid),
