@@ -1,5 +1,6 @@
 """官方 SDK + 严格结构化输出 + 原文引证校验；从不改动人工核验状态。"""
 from __future__ import annotations
+from copy import deepcopy
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import Literal
@@ -19,6 +20,8 @@ from sample_debug import capture_rejected_output
 
 SCHEMA_VERSION = '2.0'
 PROMPT_VERSION = 'evidence-binding-v2'
+PROMPT_REVISION = 'output-quality-p1/v1'
+OUTPUT_QUALITY_VERSION = 'output-quality-p1/v1'
 SECTIONS = ('facts', 'timeline', 'issues', 'pending_evidence')
 
 MAX_INPUT_CHARS = 24000
@@ -33,6 +36,10 @@ PROMPT = '''你是法律资料整理助手，仅能使用输入的 sources，不
 所有项目的 text 必须是某条引文中的连续原文摘录，不得改写或补写。概括推理只放 reasoning。
 kind 必须区分事实、主张、推断。事实表示资料记载而非认定真实；当事人的陈述/主张不能当成事实。
 facts是列表名，不代表已确认事实；其中当事人陈述仍必须kind=主张，不得改为事实。
+本轮提示修订output-quality-p1/v1；context的版本字段仍逐字回传，不用修订号替换。
+facts禁止kind=推断，只保留客观材料记载和有原文归属的当事人主张；待核实问题归pending_evidence，争议研究问题归issues。
+同一证据锚点、相同摘录及相同问题只保留一次；不在facts和pending_evidence重复同一待核实事项。不同当事人的相反主张分别保留，不因共用证据删除不同问题。
+模拟数据声明、演示用途、文件标识等元信息不作案件事实或事故事件；仍保留sources供文件识别和审计，不改写声明。
 资料目录的“是否完整尚未核实”不是完整性已确认，也不是缺失已确认，不可标为事实。
 同一句同时含客观目录记载和核实限定时，不截取半句来规避限定；保留完整引文到pending_evidence，kind=推断，只问需要核实的问题。
 pending_evidence的text仍逐字摘录原文，reasoning采用“待核实推断：……是否……？”；没有单方说话人的核实事项不强行归类为当事人主张。
@@ -40,6 +47,9 @@ pending_evidence的text仍逐字摘录原文，reasoning采用“待核实推断
 推断 reasoning 必须用“待核实推断：”开头，非推断 reasoning 为空。
 issues 和 pending_evidence 全部标为推断，只提出待核实问题，不得断言责任归属或证据存在/缺失。
 推断 reasoning 只能提出以问号结束的待核实问题，不陈述新事实或归责结论。
+reasoning先指出原文支持的核查对象，再问一个具体可核查的问题，例如“待核实推断：原始提示日志是否完整？”。
+不要照抄“尚未核实”后再叠加疑问词，不写“是否完整是否尚未核实”或“是否是否”。多问题仅在确有不同核查点时清楚分句。
+不凭空加入原文未涉及的设备、证据已经存在/缺失、时间同步结论、人物行为、日期或金额；不能提出有依据的问题时少写或留空，不凑条目。
 不输出法条、法律效力判断、案例或案号。不得编造事故时间。
 必须逐字回传输入context的schema_version、prompt_version、parser_version、document_sha256、parsed_text_sha256。
 timeline只接受原文事实/主张摘录，不接受推断；text必须与event_source.quote完全一致。
@@ -342,6 +352,85 @@ def validate_analysis(parsed, record, sources):
     return result
 
 
+# 只识别已知的完整中性声明，不按“含模拟”之类宽泛关键词隐藏案件内容。
+SIMULATION_DECLARATIONS = frozenset({
+    '【模拟数据：完全虚构，仅用于AutoLex模型集成验收，不是真实案件】',
+    '【模拟数据：AI事故分析测试材料，纯虚构，不是真实案件】',
+})
+REPEATED_QUESTION = re.compile(r'是否\s*(?:是否|(?:完整|齐全|缺失|缺漏)\s*是否)')
+
+
+def _quality_identity(row):
+    anchors = tuple(sorted((ref['document_sha256'],ref['parsed_text_sha256'],ref['parser_version'],
+                            ref['source_id'],ref['unit_index'],ref['start'],ref['end'],ref['quote'])
+                           for ref in row['sources']))
+    return row['kind'],row['text'],row['reasoning'],anchors
+
+
+def _apply_output_quality(validated,record):
+    """仅整理已经完整通过证据校验的结果；不修复失败引文、不重写问题或降级主张。
+
+    同一证据有不同问题时保留；只有完全相同的类型/正文/问题/锚点才合并。
+    所有搬移和合并均保留原条目及来源，留在返回JSON的quality_audit中，不打印日志。
+    """
+    result=deepcopy(validated)
+    actions=[]
+    eligible={name:[] for name in SECTIONS}
+    metadata=[]
+    for name in SECTIONS:
+        for index,row in enumerate(result['sections'][name]):
+            if row['kind']=='推断' and REPEATED_QUESTION.search(row['reasoning']):
+                raise AIError('输出问题存在重复疑问表达，未自动重写，结果需重新核查。',
+                              code='output_quality_failed',diagnostic={
+                                  'section':name,'item_index':index,'item_index_base':0,
+                                  'source_id':row['sources'][0]['source_id'],
+                                  'rule':'repeated_question_phrase'})
+            is_metadata=(row['text'] in SIMULATION_DECLARATIONS and all(
+                ref['quote']==row['text'] and record['units'][ref['unit_index']]['text'].strip()==row['text']
+                for ref in row['sources']))
+            if is_metadata:
+                target=len(metadata);metadata.append(row)
+                actions.append({'rule':'move_document_declaration','from_section':name,'from_index':index,
+                                'to_section':'document_metadata','to_index':target,'original_item':deepcopy(row)})
+            else:
+                eligible[name].append((index,row))
+    sections={name:[] for name in SECTIONS}
+    seen={name:{} for name in ('facts','pending_evidence')}
+    def append(section,origin,index,row):
+        identity=_quality_identity(row)
+        if identity in seen[section]:
+            target=seen[section][identity]
+            actions.append({'rule':'merge_exact_duplicate','from_section':origin,'from_index':index,
+                            'to_section':section,'to_index':target,'original_item':deepcopy(row)})
+        else:
+            target=len(sections[section]);seen[section][identity]=target
+            sections[section].append(row)
+        return target
+    # 保留模型已放入pending的条目顺序，再补入误放facts的已校验推断。
+    for index,row in eligible['pending_evidence']:
+        append('pending_evidence','pending_evidence',index,row)
+    for index,row in eligible['facts']:
+        target_section='pending_evidence' if row['kind']=='推断' else 'facts'
+        target=append(target_section,'facts',index,row)
+        if target_section=='pending_evidence':
+            actions.append({'rule':'route_inference_to_pending','from_section':'facts','from_index':index,
+                            'to_section':target_section,'to_index':target,'original_item':deepcopy(row)})
+    for name in ('timeline','issues'):
+        sections[name]=[row for _,row in eligible[name]]
+    limit=Analysis.model_json_schema()['properties']['pending_evidence']['maxItems']
+    if len(sections['pending_evidence'])>limit:
+        raise AIError('待核实条目超过兼容上限，结果已拒绝，未截断或丢弃问题。',
+                      code='output_quality_failed',diagnostic={
+                          'section':'pending_evidence','rule':'pending_capacity_exceeded',
+                          'item_count':len(sections['pending_evidence']),'limit':limit})
+    result.update(sections=sections,document_metadata=metadata,
+                  output_quality_version=OUTPUT_QUALITY_VERSION,prompt_revision=PROMPT_REVISION,
+                  quality_audit={'version':OUTPUT_QUALITY_VERSION,'actions':actions,
+                                 'counts_before':{name:len(validated['sections'][name]) for name in SECTIONS},
+                                 'counts_after':{name:len(sections[name]) for name in SECTIONS}})
+    return result
+
+
 def prepare_request(record, settings):
     sources=build_sources(record)
     data=json.dumps({'context':analysis_context(record),
@@ -384,6 +473,7 @@ def analyze_record(record, settings, store, principal, consent=False, client_fac
     started=time.monotonic()
     receipt={'run_id':uuid.uuid4().hex,'execution_mode':'live_sdk' if client_factory is None else 'injected_test_client',
              'provider':settings.provider,'base_url':settings.provider_spec.base_url,'protocol':'responses',
+             'prompt_revision':PROMPT_REVISION,'output_quality_version':OUTPUT_QUALITY_VERSION,
              'prompt_sha256':hashlib.sha256(PROMPT.encode()).hexdigest(),
              'billing':billing_record(None),
              'requested_model':settings.model,'provider_model':None,'provider_response_id':None,
@@ -422,6 +512,13 @@ def analyze_record(record, settings, store, principal, consent=False, client_fac
                     execution_mode=receipt['execution_mode'],
                     forbidden_values=(settings.api_key,settings.password_hash))
             raise AIError('AI 引证或时间绑定校验失败，未保存分析；调用元数据仍已记录。',code='output_validation_failed') from None
+        receipt['evidence_validation_status']='passed'
+        try:
+            result=_apply_output_quality(result,record)
+        except AIError as exc:
+            receipt.update(validation_status='failed',validation_error_kind='output_quality',
+                           validation_detail=str(exc),validation_diagnostic=exc.diagnostic)
+            raise
         receipt['validation_status']='passed'
         receipt['duration_ms']=round((time.monotonic()-started)*1000)
         result.update(parse_scope={'status':report.get('status','not_recorded'),

@@ -1,3 +1,17 @@
+# 最新：P1输出质量
+
+2026-11-09（北京时间）；分支`feature/output-quality-p1`，基线`feature/multi-provider-deepseek`的`9ea9fd1`。原工作区开始时干净，在独立worktree开发。用户已告知基线真实DeepSeek验收通过；本轮不读取或复制其私有记录。
+
+完整离线回归：**247项通过，17.219秒**；原223项测试文件和断言未改，新增24项。先用人工构造的固定SIM_A/B反例重现问题，再实施局部修改。完整日志见[本轮离线日志](docs/output_quality_p1_offline_tests.txt)，前后行为与局限见[输出质量说明](docs/OUTPUT_QUALITY_P1.md)。
+
+变化：原证据校验通过后，将facts中的推断移入pending，按类型/原文/问题/完整锚点精确去重；两种完整中性模拟声明归document_metadata，移位/合并原条目留quality_audit。不重写模型问题；已覆盖的重复疑问表达或移动后超过8项上限明确拒绝，保留usage及失败预算，不自动重试。新修订号output-quality-p1/v1与原Schema 2.0/绑定Prompt版本并行，保留历史兼容。
+
+原Schema、CLAIM_MARKERS、来源SHA256/坐标、时间绑定/排序、案件导入防篡改、人工核验、权限、配额、超时和SDK路径不变。正常导入及时间线、无误合并、失败不隐藏均有新增测试。真实API调用0次，不读取/修改Secrets，不部署、不合并main；离线通过不证明新Prompt真实模型效果。
+
+以下保留历史报告。
+
+---
+
 # 最新：单场景验收与UI测试配置隔离
 
 2026-11-06（北京时间）；`feature/multi-provider-deepseek`，基线`64282dc`。

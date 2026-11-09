@@ -159,3 +159,9 @@ python -m unittest discover -s tests -v
 ## 单场景验收准备
 
 `python tools/run_live_acceptance.py --scenario SIM_B`只做SIM_B的离线准备，不读取Secrets、不调用API；可改为SIM_A，不传参数保留双样本选择。报告始终列出两份场景并明确未选场景未运行。真实调用仍需原显式费用确认与本人认证；[完整说明、预算与UI测试隔离](docs/SINGLE_SCENARIO.md)。本轮仅完成离线测试。
+
+## P1输出质量（独立开发分支）
+
+`feature/output-quality-p1`基于`9ea9fd1`，先完整核验原文证据，再将误放facts的推断移到待核实列表，仅精确重复合并，已知模拟声明保留为文件元信息。分析JSON含quality_audit，保留处理前条目与来源。重复病句或待核实项超原容量上限明确拒绝，不自动改写或重试。
+
+Schema 2.0兼容不变，新增独立prompt_revision/output_quality_version及原Prompt哈希追踪；原始validator与历史JSON回放保持兼容。24项新测试加原223项全部离线通过，本轮未进行真实模型复测。具体前后对照、文件清单和最小真实复测建议见[P1说明](docs/OUTPUT_QUALITY_P1.md)。
