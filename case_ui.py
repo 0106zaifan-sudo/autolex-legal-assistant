@@ -168,6 +168,8 @@ def render_case_workspace(records, root, settings=None, principal=None):
         render_multidoc_ai(store,cid,settings,principal)
     from relation_ui import render_relations
     render_relations(store,cid)
+    from conflict_ui import render_conflict_workbench
+    render_conflict_workbench(store,cid)
     render_workspace_export(store,cid)
     if case.analysis_receipts:
         with st.expander('案件分析历史安全回执（不恢复授权）'):st.json(case.analysis_receipts)

@@ -66,7 +66,7 @@ with st.sidebar:
         st.session_state.pop('_parse_failures', None)
         st.session_state.pop('ai_consent',None)
         for key in tuple(st.session_state):
-            if key.startswith(('_workspace_','workspace_')):
+            if key.startswith(('_workspace_','workspace_','_cr_','cr_')):
                 st.session_state.pop(key,None)
         st.rerun()
     st.divider()
