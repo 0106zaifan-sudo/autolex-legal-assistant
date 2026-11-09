@@ -60,4 +60,7 @@ def render_multidoc_ai(store,cid,settings,principal):
         except (ValueError,KeyError,TypeError):st.error('结果或档案已变化，未导入；请重新核对。')
     receipt=st.session_state.get('_md_receipt')
     if receipt and receipt.get('case_id')==cid and receipt.get('batch_sha256')==batch['batch_sha256']:
-        with st.expander('最近联合调用安全回执'):st.json(receipt)
+        with st.expander('最近联合调用安全回执'):
+            st.json(receipt)
+            st.download_button('下载联合验证安全回执（不含原文）',json.dumps(receipt,ensure_ascii=False,indent=2),
+                               'AutoLex_联合验证回执.json','application/json',key='download_multidoc_receipt')

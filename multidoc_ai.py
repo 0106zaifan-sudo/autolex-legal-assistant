@@ -4,7 +4,8 @@ from datetime import datetime,timezone
 from importlib.metadata import version
 import hashlib,json,time,uuid,re
 from typing import Literal
-from pydantic import Field
+from pydantic import Field,ValidationError
+from validation_diagnostics import diagnostic,schema_diagnostic,RULES
 from ai_analysis import (StrictModel,Item,TimelineItem,Reference,empty_analysis,build_sources,
                          validate_analysis,_apply_output_quality,_assess_timeline_completeness,AIError)
 from ai_providers import adapt_request,billing_record
@@ -49,8 +50,8 @@ class MultiAnalysis(StrictModel):
     relations: list[RelationItem]=Field(max_length=16)
 
 class MultiAIError(ValueError):
-    def __init__(self,message='联合分析校验失败；未写入案件。',receipt=None):
-        self.receipt=receipt;super().__init__(message)
+    def __init__(self,message='联合分析校验失败；未写入案件。',receipt=None,diagnostic=None):
+        self.receipt=receipt;self.diagnostic=diagnostic;super().__init__(message)
 
 class SemanticPolicyError(MultiAIError):
     pass
@@ -100,62 +101,96 @@ def request_for(batch,settings):
     return request,budget
 
 def validate_case_output(store,cid,batch,raw):
+    context={'stage':'format','section':None,'item_index':None,'source_ids':[]}
+    try:
+        return _validate_case_output(store,cid,batch,raw,context)
+    except MultiAIError:
+        raise
+    except ValidationError as exc:
+        raise MultiAIError(diagnostic=schema_diagnostic(exc,context,batch,raw)) from None
+    except AIError as exc:
+        rule=RULES.get(str(exc),'document_validation_rejected')
+        stage='output_quality' if exc.code=='output_quality_failed' else context['stage']
+        raise MultiAIError(diagnostic=diagnostic(stage,rule,context,batch)) from None
+    except Exception:
+        raise MultiAIError(diagnostic=diagnostic(context['stage'],'validation_internal_error',context,batch)) from None
+
+
+def _validate_case_output(store,cid,batch,raw,context):
+    def locate(section,index,refs,stage='reference'):
+        context.update(stage=stage,section=section,item_index=index,source_ids=[r.source_id for r in refs],trigger_source_id=None)
+    def fail(rule,stage='reference'):
+        raise MultiAIError(diagnostic=diagnostic(stage,rule,context,batch))
     parsed=MultiAnalysis.model_validate(raw)
-    if parsed.case_id!=cid or parsed.batch_sha256!=batch['batch_sha256']:raise MultiAIError()
+    if parsed.case_id!=cid or parsed.batch_sha256!=batch['batch_sha256']:fail('case_or_batch_mismatch','batch')
     case=store.get_case(cid);lookup={s['source_id']:s for s in batch['sources']}
-    if len(lookup)!=len(batch['sources']):raise MultiAIError()
+    if len(lookup)!=len(batch['sources']):fail('source_id_collision','batch')
     spans={}
     def resolve(ref):
+        context['trigger_source_id']=ref.source_id
+        if ref.source_id not in context['source_ids']:context['source_ids'].append(ref.source_id)
         s=lookup.get(ref.source_id)
-        if s is None or s['case_id']!=cid or s['text'].count(ref.quote)!=1:raise MultiAIError()
+        if s is None:fail('source_not_in_batch')
+        if s['case_id']!=cid:fail('source_case_mismatch')
+        count=s['text'].count(ref.quote)
+        if count!=1:fail('quote_not_found' if count==0 else 'quote_ambiguous')
         doc=case.documents[s['document_id']]
-        if (s['file_sha256']!=doc.file_sha256 or s['parsed_text_sha256']!=doc.parsed_text_sha256 or s['parser_version']!=doc.parser_version):raise MultiAIError()
+        if (s['file_sha256']!=doc.file_sha256 or s['parsed_text_sha256']!=doc.parsed_text_sha256 or s['parser_version']!=doc.parser_version):fail('source_snapshot_mismatch')
         start=s['start']+s['text'].index(ref.quote)
-        span=make_span(cid,case.documents[s['document_id']],s['unit_index'],start,start+len(ref.quote),ref.quote)
+        try:span=make_span(cid,case.documents[s['document_id']],s['unit_index'],start,start+len(ref.quote),ref.quote)
+        except ValueError as exc:
+            rule={'原始文件哈希不一致':'original_file_hash_mismatch','解析文本快照不一致':'parsed_snapshot_mismatch',
+                  '无效原文位置':'invalid_source_coordinates','引文和原文位置不一致':'span_quote_mismatch'}.get(str(exc),'evidence_span_invalid')
+            fail(rule)
         spans[span.evidence_id]=span
         return s,span
     def local_ref(ref,did):
         s,_=resolve(ref)
-        if s['document_id']!=did:raise MultiAIError()
+        if s['document_id']!=did:fail('reference_crosses_document')
         return {'source_id':batch['local_ids'][s['source_id']],'quote':ref.quote}
     perdoc={did:empty_analysis(record) for did,record in batch['records'].items()}
+    origins={did:{'facts':[],'timeline':[]} for did in perdoc}
     for section in ('facts','timeline'):
-        for row in getattr(parsed,section):
+        for index,row in enumerate(getattr(parsed,section)):
+            locate(section,index,row.sources)
             did=resolve(row.sources[0])[0]['document_id']
             item=row.model_dump();item['sources']=[local_ref(r,did) for r in row.sources]
             if section=='timeline':
                 item['event_source']=local_ref(row.event_source,did)
                 item['time_source']=local_ref(row.time_source,did) if row.time_source else None
             perdoc[did][section].append(item)
+            origins[did][section].append(index)
     def check_inference(text,reasoning,refs):
         from ai_analysis import DATE_TIME
         quoted='\n'.join(ref.quote for ref in refs)
-        if any(match.group() not in quoted for match in DATE_TIME.finditer(reasoning)):raise MultiAIError()
-        if any(term in reasoning.upper() and term not in quoted.upper() for term in ('EDR','DSSAD')):raise MultiAIError()
-        if re.search(r'(?:EDR|DSSAD|日志).{0,6}(?:必然存在|必然缺失|已经存在|已经缺失|肯定存在|肯定缺失)',reasoning,re.I):raise MultiAIError()
+        if any(match.group() not in quoted for match in DATE_TIME.finditer(reasoning)):fail('unsupported_reasoning_time','inference')
+        if any(term in reasoning.upper() and term not in quoted.upper() for term in ('EDR','DSSAD')):fail('unsupported_data_term','inference')
+        if re.search(r'(?:EDR|DSSAD|日志).{0,6}(?:必然存在|必然缺失|已经存在|已经缺失|肯定存在|肯定缺失)',reasoning,re.I):fail('asserted_data_existence','inference')
         found=False;bound=[]
         for ref in refs:
             s,span=resolve(ref);found=found or text in ref.quote;bound.append({**span.model_dump(),'source_id':s['source_id']})
             record=batch['records'][s['document_id']];raw_doc=empty_analysis(record)
             raw_doc['pending_evidence']=[{'kind':'推断','text':ref.quote,'reasoning':reasoning,'sources':[local_ref(ref,s['document_id'])]}]
             validated=validate_analysis(raw_doc,record,build_sources(record));_apply_output_quality(validated,record)
-        if not found:raise MultiAIError()
+        if not found:fail('text_not_in_quote','inference')
         return bound
     pending=[]
-    for item in parsed.pending_evidence:
+    for index,item in enumerate(parsed.pending_evidence):
+        locate('pending_evidence',index,item.sources,'inference')
         bound=check_inference(item.text,item.reasoning,item.sources)
         value={**item.model_dump(),'sources':bound,'verification':'待人工核验'}
         if value not in pending:pending.append(value)
-    relations=[]
-    for item in parsed.relations:
+    relations=[];relation_indices=[]
+    for index,item in enumerate(parsed.relations):
+        locate('relations',index,[item.left,item.right])
         _,left=resolve(item.left);_,right=resolve(item.right)
-        if left.document_id==right.document_id or left.document_sha256==right.document_sha256:raise MultiAIError()
+        if left.document_id==right.document_id or left.document_sha256==right.document_sha256:fail('relation_requires_independent_documents')
         check_inference(item.left.quote,item.reasoning,[item.left,item.right])
         rule=compare_quotes(item.left.quote,item.right.quote)
         value={'left':{**left.model_dump(),'source_id':item.left.source_id},'right':{**right.model_dump(),'source_id':item.right.source_id},'relation_type':item.relation_type,
                'reasoning':item.reasoning,'status':'candidate','semantic_status':'pending_human_review',
                'comparison_rule':rule[1] if rule else 'ai_related_pending_review'}
-        if value not in relations:relations.append(value)
+        if value not in relations:relations.append(value);relation_indices.append(index)
     canonical={};timeline=[];facts=[];diagnostics={}
     global_ids={(s['document_id'],batch['local_ids'][s['source_id']]):s['source_id'] for s in batch['sources']}
     def global_row(did,row):
@@ -166,6 +201,20 @@ def validate_case_output(store,cid,batch,raw):
         return {'document_id':did,**value}
     for did,raw_doc in perdoc.items():
         record=batch['records'][did]
+        event_ids=set()
+        for section in ('facts','timeline'):
+            for local_index,item in enumerate(raw_doc[section]):
+                global_index=origins[did][section][local_index]
+                original=getattr(parsed,section)[global_index]
+                locate(section,global_index,original.sources,'document_binding')
+                single=empty_analysis(record);single[section]=[item]
+                checked=validate_analysis(single,record,build_sources(record))
+                if section=='timeline':
+                    identity=checked['sections']['timeline'][0]['statement_id']
+                    if identity in event_ids:fail('timeline_duplicate_event','document_binding')
+                    event_ids.add(identity)
+        context.update(stage='document_binding',section=None,item_index=None,trigger_source_id=None,
+                       source_ids=[source['source_id'] for source in batch['sources'] if source['document_id']==did])
         validated=validate_analysis(raw_doc,record,build_sources(record))
         result=_apply_output_quality(validated,record)
         result.update(mode='AI生成（待人工核验）',model='multidoc')
@@ -173,6 +222,7 @@ def validate_case_output(store,cid,batch,raw):
         facts.extend(global_row(did,row) for row in result['sections']['facts'])
         timeline.extend(global_row(did,row) for row in result['sections']['timeline'])
         view=deepcopy(result)
+        context.update(stage='completeness_projection',section=None,item_index=None,trigger_source_id=None,source_ids=[])
         for question in pending:
             for source in question['sources']:
                 if source['document_id']!=did:continue
@@ -181,10 +231,13 @@ def validate_case_output(store,cid,batch,raw):
                     'sources':[{'source_id':batch['local_ids'][source['source_id']],'quote':source['quote']}]}]
                 view['sections']['pending_evidence'].extend(validate_analysis(local,record,build_sources(record))['sections']['pending_evidence'])
         diagnostics[did]=_assess_timeline_completeness(view,record)
-    for relation in relations:
+    for index,relation in enumerate(relations):
+        origin=parsed.relations[relation_indices[index]]
+        locate('relations',relation_indices[index],[origin.left,origin.right],'semantic_policy')
         rule=compare_quotes(relation['left']['quote'],relation['right']['quote'])
         if relation['relation_type'] in ('support_candidate','inconsistency_candidate') and (not rule or rule[0]!=relation['relation_type']):
-            raise SemanticPolicyError()
+            raise SemanticPolicyError(diagnostic=diagnostic('semantic_policy','strong_relation_not_supported',context,batch))
+    context.update(stage='time_comparison',section=None,item_index=None,trigger_source_id=None,source_ids=[])
     cross=[]
     from itertools import combinations
     for a,b in combinations(timeline,2):
@@ -218,25 +271,31 @@ def analyze_case(store,cid,selected,settings,quota,principal,*,authorized_batch=
         for key in ('call_status','provider_status','provider_model','provider_response_id','token_usage','http_status'):receipt[key]=response.get(key)
         receipt['billing']=billing_record(receipt['token_usage'])
         if response.get('error_code'):receipt['error_code']=response['error_code']
-        if response.get('error_code'):raise MultiAIError('模型服务未成功返回；不自动重试。')
-        if response.get('provider_status')!='completed' or response.get('refused'):raise MultiAIError('模型拒绝或输出不完整。')
-        parsed=MultiAnalysis.model_validate_json(response.get('output_text',''));receipt['format_status']='passed'
+        if response.get('error_code'):raise MultiAIError('模型服务未成功返回；不自动重试。',diagnostic=diagnostic('call','provider_call_failed',{},batch))
+        if response.get('provider_status')!='completed' or response.get('refused'):raise MultiAIError('模型拒绝或输出不完整。',diagnostic=diagnostic('call','refused_or_incomplete',{},batch))
+        try:parsed=MultiAnalysis.model_validate_json(response.get('output_text',''))
+        except ValidationError as exc:
+            raise MultiAIError(diagnostic=schema_diagnostic(exc,{'stage':'format'},batch,response.get('output_text',''))) from None
+        receipt['format_status']='passed'
         # 再检查当前档案，防止请求期间快照或选择发生变化。
         current=prepare_case(store,cid,selected,settings)
-        if current['batch_sha256']!=batch['batch_sha256']:raise MultiAIError('档案发生变化，结果拒绝。')
+        if current['batch_sha256']!=batch['batch_sha256']:raise MultiAIError('档案发生变化，结果拒绝。',diagnostic=diagnostic('batch','batch_changed_during_call',{},batch))
         receipt['evidence_status']='checking'
         result=validate_case_output(store,cid,current,parsed)
         receipt['evidence_status']='passed';result['receipt']=receipt
         return result
-    except SemanticPolicyError:
+    except SemanticPolicyError as exc:
+        receipt['validation_diagnostic']=exc.diagnostic
         receipt['evidence_status']='passed';receipt['semantic_status']='rejected_by_conservative_policy';receipt['error_code']='semantic_policy_rejected'
         raise MultiAIError('关系语义未满足保守策略；拒绝建议，未写入案件。',receipt) from None
     except ModelRuntimeError as exc:
         receipt.update(exc.metadata);receipt['error_code']=exc.code
+        receipt['validation_diagnostic']=diagnostic('call','model_runtime_failed',{},batch)
         raise MultiAIError('联合调用超时或工作进程失败；远端计费状态可能未知。',receipt) from None
     except KeyboardInterrupt:
-        receipt['error_code']='cancelled';raise MultiAIError('调用已取消；远端状态未知，不自动重试。',receipt) from None
-    except Exception:
+        receipt['error_code']='cancelled';receipt['validation_diagnostic']=diagnostic('call','call_cancelled',{},batch);raise MultiAIError('调用已取消；远端状态未知，不自动重试。',receipt) from None
+    except Exception as exc:
+        receipt['validation_diagnostic']=getattr(exc,'diagnostic',None) or diagnostic('batch','batch_or_processing_rejected',{},batch)
         receipt.setdefault('error_code','output_validation_failed')
         if receipt['format_status']=='not_run':receipt['format_status']='failed_or_unavailable'
         if receipt['evidence_status']=='checking':receipt['evidence_status']='failed'

@@ -1,3 +1,13 @@
+# V2.0-B验证诊断补丁最新离线测试
+
+独立分支 `feature/v2b-validation-diagnostics`，基线 `a717d63593b303dc0eeee3abebf2c01789dd7a08`。原工作区干净，独立 worktree 开发。
+
+完整执行 `python -m unittest discover -s tests -v`：**387项全部通过，27.538秒**。原351项保留，新增36项（35项核心诊断、1项界面）。完整日志见[本轮日志](docs/v2b_validation_diagnostics_tests.txt)，根因边界、映射和下一次验收见[诊断说明](docs/V2B_VALIDATION_DIAGNOSTICS.md)。
+
+首次新增测试验证缺少诊断；第一次完整执行387项时2项原子进程测试受新增AppTest测试遗留的 __main__ 影响失败，修复新增测试的状态清理后完整387项通过。未改原测试断言、超时运行器或生产保护规则。所有模型请求均为注入或本地Mock，真实API调用0次，不读改Secrets、不部署、不合并。
+
+以下保留历史报告。
+
 # V2.0-B最新离线测试
 
 独立分支feature/v2-multidoc-ai，基线360911ff7a。开始前原工作区干净，独立worktree开发。

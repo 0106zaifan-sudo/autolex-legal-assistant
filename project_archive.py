@@ -4,6 +4,8 @@ import io
 import zipfile
 
 SOURCE_FILES = (
+    "validation_diagnostics.py", "tests/test_validation_diagnostics.py", "tests/test_diagnostic_ui.py",
+    "docs/V2B_VALIDATION_DIAGNOSTICS.md", "docs/v2b_validation_diagnostics_tests.txt",
     'multidoc_ai.py', 'multidoc_ui.py', 'tests/test_multidoc_ai.py', 'tests/test_multidoc_ui.py',
     'docs/MULTIDOC_AI_V2B.md', 'docs/multidoc_ai_offline_tests.txt',
     'evidence_relations.py', 'relation_ui.py', 'make_multidoc_samples.py', 'tests/test_multidoc.py',

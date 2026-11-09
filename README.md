@@ -181,3 +181,7 @@ Schema 2.0兼容不变，新增独立prompt_revision/output_quality_version及�
 独立分支feature/v2-multidoc-ai：同案选择2—4份材料，逐份确认解析风险，并另行授权一次联合请求。来源使用批次全局ID，结果整批验证后预览，明确点击才原子导入。关系和时间差异均待人工核验；导入后案件版本1.2保留原建议、回执及既有审阅。单文档Schema和V2.0-A流程保持兼容。
 
 351项离线测试通过，本轮没有真实API或部署。[详细流程、数据结构、限制及建议验收方案](docs/MULTIDOC_AI_V2B.md)。
+
+## V2.0-B验证失败安全诊断
+
+独立分支 `feature/v2b-validation-diagnostics` 在失败安全回执增加 validation_diagnostic，记录规则、阶段、顶层条目索引与脱敏来源编号，同时保留Token用量。当前批次回执可下载JSON；失败内容仍不能导入案件，不改变原证据约束或案件结构。新增36项测试，完整387项离线通过，没有真实API调用。[诊断边界、模拟材料复现及下一次验收](docs/V2B_VALIDATION_DIAGNOSTICS.md)。
