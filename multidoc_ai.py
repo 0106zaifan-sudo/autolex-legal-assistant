@@ -32,6 +32,9 @@ relations引用左右不同原件，关系仅为候选。支持/不一致须同�
 系统发出、成功送达、驾驶人收到或感知是不同命题，不能直接作为矛盾或互证。时钟、事件同一性或来源不明时保守标需核实。
 pending_evidence为推断，text必须直接复制至少一条sources.quote中连续存在的原文，不得概括、改写或拼接跨文件内容作为text；不要求text出现在每条quote。
 pending_evidence.sources可以保留多个文档的独立引用，每条都须通过原文和位置核验；不要为了过检删除有价值的来源。跨文件核验问题放在reasoning，以“待核实推断：”开头并以问号结束，仅提出来源支持的具体问题，不把问题或对比摘要写入text。
+pending_evidence的reasoning使用的EDR/DSSAD术语必须出现在本条sources.quote中；文件名或未引用的标题不能代替引文。术语仅在解析标题中时，保留实质正文引文，并把同一文档的解析标题作为独立来源引用，不改写或拼接quote；不能定位标题原文时不得用文件名补足依据。
+标题只标识材料，不证明技术功能或数据真实存在。跨文件问题明确区分各文档的核查对象，不得把一个文档的术语、字段或功能转移到另一文档；某份材料标为EDR摘要不代表其他材料含EDR，也不代表存在DSSAD记录。没有引文支持的技术概念不得引入，合法有来源的核验问题应保留。
+relations的技术术语同样必须由本条left.quote或right.quote直接支持，不能借用未引用的其他材料；不得改变两侧来源或扩大引文来制造支持。
 relations.reasoning也用同样格式提出核查问题，不能断言真实性。不得假定EDR/DSSAD/日志必然存在，不认定证据缺失或责任，不输出法条案例。
 不要重复同一对证据的相同问题，不合并不同来源或不同问题。不写是否完整是否尚未核实等病句。
 资料不足返回空列表，不补事实；未知时间事件应问时间有无其他材料记载，日志完整性也仅待核实。'''
@@ -244,7 +247,12 @@ def _validate_case_output(store,cid,batch,raw,context):
         from ai_analysis import DATE_TIME
         quoted='\n'.join(ref.quote for ref in refs)
         if any(match.group() not in quoted for match in DATE_TIME.finditer(reasoning)):fail('unsupported_reasoning_time','inference')
-        if any(term in reasoning.upper() and term not in quoted.upper() for term in ('EDR','DSSAD')):fail('unsupported_data_term','inference')
+        unsupported_terms=[term for term in ('EDR','DSSAD') if term in reasoning.upper() and term not in quoted.upper()]
+        if unsupported_terms:
+            detail=diagnostic('inference','unsupported_data_term',context,batch)
+            # 固定词表及固定策略标识；不记录reasoning、quote或任意模型字段。
+            detail.update(unsupported_terms=unsupported_terms,term_support_scope='explicit_quotes_only')
+            raise MultiAIError(diagnostic=detail)
         if re.search(r'(?:EDR|DSSAD|日志).{0,6}(?:必然存在|必然缺失|已经存在|已经缺失|肯定存在|肯定缺失)',reasoning,re.I):fail('asserted_data_existence','inference')
         found=False;bound=[]
         for ref in refs:

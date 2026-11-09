@@ -1,3 +1,5 @@
+> 当前术语来源补丁新增23项，全套591项离线通过；当前预算见[术语预算复核](../../docs/B01_DATA_TERM_BUDGET.json)，实际根因判断与限制见[说明](../../docs/B01_SUPPORTED_DATA_TERMS.md)。下方保留数据生成及上一补丁历史报告。
+
 > 本页保留CASE-001在数据分支首次验收的历史记录。当前补丁刷新预算元数据，未改原件或Gold；最新Prompt预算见[预算复核](../../docs/B01_PENDING_BUDGET.json)，最新回归见根目录TEST_REPORT。
 
 # CASE-001标准版实际离线验证

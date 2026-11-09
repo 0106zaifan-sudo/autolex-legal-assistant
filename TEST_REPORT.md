@@ -1,3 +1,15 @@
+# CASE-001 B01技术术语来源修复：最新离线测试
+
+分支`feature/b01-supported-data-term-fix`，基线`fcfa64d92e3277fd035461fd82c851dae264e525`，独立worktree开发。
+
+基线568项通过，55.044秒；新增23项后完整`python -m unittest discover -s tests -v`：**591项全部通过，55.731秒**。原568项测试文件与断言未改。先写规格及反例，旧Prompt的12个指令子断言失败、3项诊断字段测试缺字段，其余引用范围反例已复现。依赖使用既有PYTHONPATH，不读取Secrets。
+
+改动只涉及联合Prompt和固定术语错误诊断；保留unsupported_data_term、text/quote/坐标/哈希/时间/分类及全部安全门禁。D04正文加同文档真实标题引用可保留合法核验问题；无依据DSSAD、伪造标题/跨文档配错source_id仍拒绝；导入只保留待核验推断。新增测试明确暴露词面支持不等于跨文件语义归属验证，不能宣称自动解决概念转移。
+
+B01静态字节73371/128000，输入2015/16000。只刷新预算元数据和指纹；原件与Gold不变。真实模型调用0次，没有自动重试、部署或合并；Mock Token数字不是实际服务商费用。详见[分析与方案](docs/B01_SUPPORTED_DATA_TERMS.md)、[日志](docs/b01_data_term_offline_tests.txt)、[预算](docs/B01_DATA_TERM_BUDGET.json)。
+
+以下保留历史报告。
+
 # CASE-001 B01待核实事项契约修复离线测试
 
 独立分支`feature/b01-pending-evidence-text-fix`，基线`202594c6ec88b152167e0080deb0a677467d325c`。
