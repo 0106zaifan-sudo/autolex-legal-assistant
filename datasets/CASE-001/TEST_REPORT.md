@@ -1,3 +1,5 @@
+> 本页保留CASE-001在数据分支首次验收的历史记录。当前补丁刷新预算元数据，未改原件或Gold；最新Prompt预算见[预算复核](../../docs/B01_PENDING_BUDGET.json)，最新回归见根目录TEST_REPORT。
+
 # CASE-001标准版实际离线验证
 
 数据分支 `data/case-001-standard`；基线 `2ff740104cdd334f33d085e8a90d7e8053b6a4f9`。基线工作区干净，另建独立worktree。原V2.0-D功能分支、main及全部旧验收样本不修改。

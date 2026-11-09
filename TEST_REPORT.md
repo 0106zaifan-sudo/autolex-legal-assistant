@@ -1,3 +1,15 @@
+# CASE-001 B01待核实事项契约修复离线测试
+
+独立分支`feature/b01-pending-evidence-text-fix`，基线`202594c6ec88b152167e0080deb0a677467d325c`。
+
+新增12项，原556项测试文件及断言不改；完整执行`python -m unittest discover -s tests -v`：**568项全部通过，56.269秒**。运行依赖通过PYTHONPATH指定现有离线依赖目录。新增测试先于生产修改，旧Prompt的10个指令子断言失败；反例已能复现text_not_in_quote，正例保留多来源核验问题。Token数字113等仅为Mock，不是真实服务商用量。
+
+生产代码仅澄清Prompt。没有放宽或重写text、quote、来源及坐标；失败案件不被导入，没有自动重试。B01静态请求字节72462/128000，输入字符2015/16000，原件与Gold未变。完整[修复说明](docs/B01_PENDING_TEXT_FIX.md)、[测试日志](docs/b01_pending_offline_tests.txt)、[新旧预算](docs/B01_PENDING_BUDGET.json)。
+
+本轮真实模型调用0次，不读取或修改Secrets，不部署。离线通过不等于真实DeepSeek验收通过。
+
+以下保留历史报告。
+
 # AutoLEX V2.0-D证据冲突审查最新离线测试
 
 独立分支 `feature/v2d-evidence-conflict-review`，基线 `1df304f49b226cf1549a9d1e31280a660c3b7c26`。检查基线工作区干净后独立worktree开发。

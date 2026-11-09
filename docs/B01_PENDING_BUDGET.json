@@ -1,0 +1,190 @@
+{
+  "version": "b01-pending-budget/1",
+  "baseline_sha": "202594c6ec88b152167e0080deb0a677467d325c",
+  "dataset_design_baseline": "2ff740104cdd334f33d085e8a90d7e8053b6a4f9",
+  "provider": "deepseek",
+  "requested_model": "deepseek-flash",
+  "response_schema": "multidoc-analysis/1.1",
+  "prompt_version": "multidoc/candidates-v1",
+  "prompt_hash_before": "dd8068f6bb6a424325ef0ab22a37757849d13b37b1b2106ec4a7cffd2d5eee3e",
+  "prompt_hash_after": "050408c9ab6513a1c2d15e231fc06c3afb14cc8b6c81ec9bd3eb57025051feb6",
+  "batches": [
+    {
+      "batch_id": "B01",
+      "before": {
+        "batch_sha256": "e703116da95462bb1f8cad011acbb5c469b754e065e4fef9b3b941524ab70110",
+        "candidate_count": 4,
+        "input_chars": 2015,
+        "original_characters": 1940,
+        "passed": true,
+        "request_bytes": 72094,
+        "required_coverage_acknowledgements": [
+          "D01",
+          "D03",
+          "D04"
+        ],
+        "source_blocks": 62
+      },
+      "after": {
+        "batch_sha256": "520111dbfed91e8c2bb85817e6ea6212475e80125bcefbdfc6180e0c06375aeb",
+        "candidate_count": 4,
+        "input_chars": 2015,
+        "original_characters": 1940,
+        "passed": true,
+        "request_bytes": 72462,
+        "required_coverage_acknowledgements": [
+          "D01",
+          "D03",
+          "D04"
+        ],
+        "source_blocks": 62
+      }
+    },
+    {
+      "batch_id": "B02",
+      "before": {
+        "batch_sha256": "f94456e1cb8061acab42b615c2dada34edd23e74828d700acc8e1ed722274331",
+        "candidate_count": 9,
+        "input_chars": 2422,
+        "original_characters": 2211,
+        "passed": true,
+        "request_bytes": 82869,
+        "required_coverage_acknowledgements": [
+          "D03",
+          "D05"
+        ],
+        "source_blocks": 67
+      },
+      "after": {
+        "batch_sha256": "983e4372d6da4019f59babd9a9fedf6cf7e3fe21ce534f0c27b076a89f330b39",
+        "candidate_count": 9,
+        "input_chars": 2422,
+        "original_characters": 2211,
+        "passed": true,
+        "request_bytes": 83237,
+        "required_coverage_acknowledgements": [
+          "D03",
+          "D05"
+        ],
+        "source_blocks": 67
+      }
+    },
+    {
+      "batch_id": "B03",
+      "before": {
+        "batch_sha256": "f9e1d1c643302320903d41f7550aa2be0e8a382967b694eca4c1d76bce125603",
+        "candidate_count": 9,
+        "input_chars": 2368,
+        "original_characters": 2077,
+        "passed": true,
+        "request_bytes": 80272,
+        "required_coverage_acknowledgements": [
+          "D01",
+          "D04"
+        ],
+        "source_blocks": 64
+      },
+      "after": {
+        "batch_sha256": "c1e3fd4df3e4eb8ca5695f20d0503aa9906dfba4c03cc972aea5a3756b46ad1c",
+        "candidate_count": 9,
+        "input_chars": 2368,
+        "original_characters": 2077,
+        "passed": true,
+        "request_bytes": 80640,
+        "required_coverage_acknowledgements": [
+          "D01",
+          "D04"
+        ],
+        "source_blocks": 64
+      }
+    },
+    {
+      "batch_id": "B04",
+      "before": {
+        "batch_sha256": "55d4588715fe35b00ac5dc6a942bb5b8fdb5d39c34f092aa7642b1974fc93059",
+        "candidate_count": 8,
+        "input_chars": 2174,
+        "original_characters": 1997,
+        "passed": true,
+        "request_bytes": 81646,
+        "required_coverage_acknowledgements": [
+          "D03"
+        ],
+        "source_blocks": 64
+      },
+      "after": {
+        "batch_sha256": "9a18fe2ca9de8fa3fa1f538954e80d294d019cbaf4cc9142c5d07c64bad55962",
+        "candidate_count": 8,
+        "input_chars": 2174,
+        "original_characters": 1997,
+        "passed": true,
+        "request_bytes": 82014,
+        "required_coverage_acknowledgements": [
+          "D03"
+        ],
+        "source_blocks": 64
+      }
+    },
+    {
+      "batch_id": "B05",
+      "before": {
+        "batch_sha256": "c073103873736a7d8d113079f39ea2afc1e0f821ee5b89899cca1dcb42341c5c",
+        "candidate_count": 7,
+        "input_chars": 2394,
+        "original_characters": 2212,
+        "passed": true,
+        "request_bytes": 78820,
+        "required_coverage_acknowledgements": [
+          "D03",
+          "D04",
+          "D05"
+        ],
+        "source_blocks": 67
+      },
+      "after": {
+        "batch_sha256": "517057efd49f0f35bdfd2b0e2abe05e9d3a4a5d6bc5ef6868c36523a0c4bde53",
+        "candidate_count": 7,
+        "input_chars": 2394,
+        "original_characters": 2212,
+        "passed": true,
+        "request_bytes": 79188,
+        "required_coverage_acknowledgements": [
+          "D03",
+          "D04",
+          "D05"
+        ],
+        "source_blocks": 67
+      }
+    }
+  ],
+  "default_max_request_bytes": 128000,
+  "current_budget_windows": [
+    {
+      "batches": [
+        "B01",
+        "B02",
+        "B03"
+      ],
+      "budget_only_not_authorized": true,
+      "input_characters": 6805,
+      "minimum_between_calls_seconds": 30,
+      "planned_calls": 3,
+      "request_bytes": 236339
+    },
+    {
+      "batches": [
+        "B04",
+        "B05"
+      ],
+      "budget_only_not_authorized": true,
+      "input_characters": 4568,
+      "minimum_between_calls_seconds": 30,
+      "planned_calls": 2,
+      "request_bytes": 161202
+    }
+  ],
+  "scope": "静态默认配置预检，不读取真实Secrets、当前额度或此次真实响应；不执行请求",
+  "materials_and_gold_bytes_unchanged": true,
+  "real_model_calls": 0,
+  "automatic_retries": 0
+}

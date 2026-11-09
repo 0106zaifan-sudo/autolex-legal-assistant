@@ -45,12 +45,12 @@
         "not_a_complete_timeline": true
       },
       "preflight": {
-        "batch_sha256": "e703116da95462bb1f8cad011acbb5c469b754e065e4fef9b3b941524ab70110",
+        "batch_sha256": "520111dbfed91e8c2bb85817e6ea6212475e80125bcefbdfc6180e0c06375aeb",
         "candidate_count": 4,
         "input_chars": 2015,
         "original_characters": 1940,
         "passed": true,
-        "request_bytes": 72094,
+        "request_bytes": 72462,
         "required_coverage_acknowledgements": [
           "D01",
           "D03",
@@ -113,12 +113,12 @@
         "not_a_complete_timeline": true
       },
       "preflight": {
-        "batch_sha256": "f94456e1cb8061acab42b615c2dada34edd23e74828d700acc8e1ed722274331",
+        "batch_sha256": "983e4372d6da4019f59babd9a9fedf6cf7e3fe21ce534f0c27b076a89f330b39",
         "candidate_count": 9,
         "input_chars": 2422,
         "original_characters": 2211,
         "passed": true,
-        "request_bytes": 82869,
+        "request_bytes": 83237,
         "required_coverage_acknowledgements": [
           "D03",
           "D05"
@@ -178,12 +178,12 @@
         "not_a_complete_timeline": true
       },
       "preflight": {
-        "batch_sha256": "f9e1d1c643302320903d41f7550aa2be0e8a382967b694eca4c1d76bce125603",
+        "batch_sha256": "c1e3fd4df3e4eb8ca5695f20d0503aa9906dfba4c03cc972aea5a3756b46ad1c",
         "candidate_count": 9,
         "input_chars": 2368,
         "original_characters": 2077,
         "passed": true,
-        "request_bytes": 80272,
+        "request_bytes": 80640,
         "required_coverage_acknowledgements": [
           "D01",
           "D04"
@@ -243,12 +243,12 @@
         "not_a_complete_timeline": true
       },
       "preflight": {
-        "batch_sha256": "55d4588715fe35b00ac5dc6a942bb5b8fdb5d39c34f092aa7642b1974fc93059",
+        "batch_sha256": "9a18fe2ca9de8fa3fa1f538954e80d294d019cbaf4cc9142c5d07c64bad55962",
         "candidate_count": 8,
         "input_chars": 2174,
         "original_characters": 1997,
         "passed": true,
-        "request_bytes": 81646,
+        "request_bytes": 82014,
         "required_coverage_acknowledgements": [
           "D03"
         ],
@@ -305,12 +305,12 @@
         "not_a_complete_timeline": true
       },
       "preflight": {
-        "batch_sha256": "c073103873736a7d8d113079f39ea2afc1e0f821ee5b89899cca1dcb42341c5c",
+        "batch_sha256": "517057efd49f0f35bdfd2b0e2abe05e9d3a4a5d6bc5ef6868c36523a0c4bde53",
         "candidate_count": 7,
         "input_chars": 2394,
         "original_characters": 2212,
         "passed": true,
-        "request_bytes": 78820,
+        "request_bytes": 79188,
         "required_coverage_acknowledgements": [
           "D03",
           "D04",
@@ -332,7 +332,7 @@
       "input_characters": 6805,
       "minimum_between_calls_seconds": 30,
       "planned_calls": 3,
-      "request_bytes": 235235
+      "request_bytes": 236339
     },
     {
       "batches": [
@@ -343,7 +343,7 @@
       "input_characters": 4568,
       "minimum_between_calls_seconds": 30,
       "planned_calls": 2,
-      "request_bytes": 160466
+      "request_bytes": 161202
     }
   ],
   "cooldown_seconds_minimum": 30,
