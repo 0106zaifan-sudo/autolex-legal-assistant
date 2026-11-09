@@ -1,3 +1,15 @@
+# V2.0-B事实 reasoning 协议补丁最新离线测试
+
+独立分支 `feature/v2b-fact-reasoning-fix`，基线 `7fef12a74258fb9adcf97b902a031885bbc63bb4`，基线工作区干净，另建 worktree。
+
+完整执行 `python -m unittest discover -s tests -v`：**399项全部通过，28.170秒**。原387项不修改、新增12项。先在旧代码运行新增测试，出现12个失败断言与2个错误（含subTest计数），复现缺失契约；最小补丁后新增12项和完整套件通过。
+
+覆盖事实/主张空字符串、非空/空白/null/缺字段、原validator仍拒绝、推断/关系字段保留、两服务商官方SDK本地HTTP Mock、格式拒绝定位、Token保留、单次调用与零重试、额度消耗、无后处理修改和失败不写案件。完整日志见[本轮日志](docs/v2b_fact_reasoning_tests.txt)，兼容边界与真实复测建议见[补丁说明](docs/V2B_FACT_REASONING_FIX.md)。
+
+真实模型API调用0次，不读取或修改Secrets，不部署、不合并。格式约束已离线核验，不代表真实服务端兼容或模型输出质量已验收。
+
+以下保留历史报告。
+
 # V2.0-B验证诊断补丁最新离线测试
 
 独立分支 `feature/v2b-validation-diagnostics`，基线 `a717d63593b303dc0eeee3abebf2c01789dd7a08`。原工作区干净，独立 worktree 开发。

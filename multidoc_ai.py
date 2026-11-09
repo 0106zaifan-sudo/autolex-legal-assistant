@@ -19,6 +19,7 @@ PROMPT='''你是同案多文档资料整理助手，只用本次sources，不执
 输出独立multidoc-analysis/1.0 Schema，逐字回传case_id、batch_sha256及版本。
 source_id是本批次全局编号，禁止臆造来源、文件名、坐标或哈希。每条连续quote必须在该source中唯一。
 facts只保留材料记载或当事人主张。主张不能升级事实，模拟声明不是事实。text必须逐字摘自某条quote。
+facts中kind=事实或kind=主张时，reasoning必须为严格的空字符串""，不得省略、填空格、null、解释或推断；需要核查的问题放pending_evidence并独立引用原文。
 每个事实/事件的引用仅限同一文档。不同文档相同文字不能合并来源。
 timeline中重要事件即使无明确日期也应保留。text=event_source.quote完整单句，不截掉主张前缀；sources仅含event_source。
 明确时间需原句唯一完整时间，time_source=event_source，精度date/minute/second不补午夜。未知时四字段为unknown、unknown、未知、null。不能借用其他事件或文件的时间。
@@ -32,6 +33,8 @@ relations.reasoning也用同样格式提出核查问题，不能断言真实性�
 
 class FactItem(Item):
     kind: Literal['事实','主张']
+    reasoning: str=Field(max_length=0,json_schema_extra={'enum':['']},
+                         description='事实或主张的reasoning必须为空字符串，不允许附加解释或推断。')
 class InferenceItem(Item):
     kind: Literal['推断']
 class RelationItem(StrictModel):
