@@ -1,3 +1,15 @@
+# V2.0-B时间线引文Prompt补丁最新离线测试
+
+独立分支 `feature/v2b-timeline-quote-fix`，基线 `51d60ee6be8b30661968a3abcef167bd7e838d05`；原工作区干净，独立worktree开发。
+
+完整执行 `python -m unittest discover -s tests -v`：**418项全部通过，28.685秒**；保留原399项，新增19项。先增加离线反例，旧Prompt缺少7项明确指导；实现只替换联合Prompt的时间线指导。新增测试初版误认为跨行文本会在同一source，核对build_sources后分别测试“来源层跨行拒绝”和“绑定层CR/LF拒绝”，未修改生产分句逻辑或原断言。
+
+固定四份虚构材料未变。覆盖分号/句号/问号/感叹号/换行、完整句段、主体否定/主张与时间不截断、原文坐标/文件哈希/独立来源、跨文档借时间、精度、未知状态、失败回执与不写案件、不制造事件及facts.reasoning约束保留。完整日志见[本轮日志](docs/v2b_timeline_quote_tests.txt)，规则、修复范围与残余风险见[补丁说明](docs/V2B_TIMELINE_QUOTE_FIX.md)。
+
+本轮真实API调用0次，不读改Secrets，不部署、不合并。安全回执不含模型原文，不能确定第三次真实失败的具体标点；418项离线通过不代表真实模型时间线完整性已验收。
+
+以下保留历史报告。
+
 # V2.0-B事实 reasoning 协议补丁最新离线测试
 
 独立分支 `feature/v2b-fact-reasoning-fix`，基线 `7fef12a74258fb9adcf97b902a031885bbc63bb4`，基线工作区干净，另建 worktree。

@@ -189,3 +189,7 @@ Schema 2.0兼容不变，新增独立prompt_revision/output_quality_version及�
 ## V2.0-B事实 reasoning 协议修复
 
 facts 中事实/主张的 reasoning 必须为必填空字符串，Prompt与JSON Schema同步表达原有规则；违规输出提前拒绝，不自动清空。原证据、安全诊断、时间线和跨文件校验不变。完整399项离线测试通过（新增12项），未调用真实模型。[契约兼容、影响范围与复测说明](docs/V2B_FACT_REASONING_FIX.md)。
+
+## V2.0-B时间线引文指导修复
+
+联合Prompt明确独立完整句段、内部标点/换行边界及主体/否定/时间保留要求；不能安全拆分时保守保留有来源信息与待核查问题，不自动制造事件。原validator与facts空reasoning契约不变。完整418项离线测试通过（新增19项），无真实API调用。[规则复核、固定样本反例和真实复测边界](docs/V2B_TIMELINE_QUOTE_FIX.md)。
