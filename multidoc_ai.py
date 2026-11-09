@@ -12,6 +12,7 @@ from ai_providers import adapt_request,billing_record
 from model_runtime import invoke,ModelRuntimeError
 from evidence import make_span,snapshot_hash
 from evidence_relations import compare_quotes
+from timeline_candidates import CANDIDATE_VERSION,build_event_catalog
 
 SCHEMA_VERSION='multidoc-analysis/1.0'
 PROMPT_VERSION='multidoc/v1'
@@ -55,6 +56,27 @@ class MultiAnalysis(StrictModel):
     pending_evidence: list[InferenceItem]=Field(max_length=12)
     relations: list[RelationItem]=Field(max_length=16)
 
+CANDIDATE_SCHEMA_VERSION='multidoc-analysis/1.1'
+CANDIDATE_PROMPT_VERSION='multidoc/candidates-v1'
+CANDIDATE_PROMPT=PROMPT.replace('输出独立multidoc-analysis/1.0 Schema',
+    '输出独立multidoc-analysis/1.1 Schema，prompt_version必须为multidoc/candidates-v1')
+_start=CANDIDATE_PROMPT.index('timeline中具有独立原文支持')
+_end=CANDIDATE_PROMPT.index('时间差异分别保留',_start)
+CANDIDATE_PROMPT=(CANDIDATE_PROMPT[:_start]+'''timeline只能选择event_catalog中的candidate_id与kind（事实或主张），禁止输出text、quote、时间或来源字段。
+候选仅是通过原文绑定的句段，不证明真实性。kind必须遵守allowed_kinds，单方主张不能升级事实。
+应选择具有独立原文支持的重要事件，包括未知时间事件；不得为了凑全而选择非事件或编造编号，不重复选择同一编号。
+原文引用和时间由程序从本批次候选恢复，不同来源的时间记录分别保留，不选择最终时间。未提供候选的段落不强造事件，必要时用有来源pending_evidence提出核查问题。
+'''+CANDIDATE_PROMPT[_end:])
+
+class EventSelection(StrictModel):
+    candidate_id: str=Field(pattern=r'^CE_[a-f0-9]{24}$')
+    kind: Literal['事实','主张']
+
+class CandidateAnalysis(MultiAnalysis):
+    schema_version: Literal['multidoc-analysis/1.1']
+    prompt_version: Literal['multidoc/candidates-v1']
+    timeline: list[EventSelection]=Field(max_length=24)
+
 class MultiAIError(ValueError):
     def __init__(self,message='联合分析校验失败；未写入案件。',receipt=None,diagnostic=None):
         self.receipt=receipt;self.diagnostic=diagnostic;super().__init__(message)
@@ -92,7 +114,8 @@ def prepare_case(store,cid,selected,settings):
     if len({s['source_id'] for s in sources})!=len(sources):raise MultiAIError('批次来源编号冲突，未发送。')
     chars=sum(len(s['text']) for s in sources)
     if chars>16000 or len(sources)>96:raise MultiAIError('联合输入超过16000字符或96块，未发送。')
-    batch=digest([cid,documents,sources,settings.provider,settings.model,SCHEMA_VERSION,PROMPT_VERSION,hashlib.sha256(PROMPT.encode()).hexdigest()])
+    batch=digest([cid,documents,sources,settings.provider,settings.model,SCHEMA_VERSION,PROMPT_VERSION,hashlib.sha256(PROMPT.encode()).hexdigest(),CANDIDATE_VERSION,
+                  hashlib.sha256(CANDIDATE_PROMPT.encode()).hexdigest(),digest(CandidateAnalysis.model_json_schema())])
     return {'case_id':cid,'batch_sha256':batch,'documents':documents,'sources':sources,'records':records,
             'required_ack':[d['document_id'] for d in documents if d['parse_report'].get('requires_acknowledgement')],
             'input_chars':chars,'local_ids':local_ids}
@@ -105,6 +128,56 @@ def request_for(batch,settings):
     budget={'input_chars':batch['input_chars'],'request_bytes':len(json.dumps(request,ensure_ascii=False,separators=(',',':')).encode())+1024}
     if budget['request_bytes']>settings.max_request_bytes:raise MultiAIError('完整请求超过字节预算。')
     return request,budget
+
+def candidate_request_for(batch,settings):
+    try:catalog=build_event_catalog(batch)
+    except ValueError:
+        raise MultiAIError('候选句段构建未通过，未发送；不截断或降级。') from None
+    payload={k:batch[k] for k in ('case_id','batch_sha256','documents','sources')}
+    payload['event_catalog']=catalog
+    schema=CandidateAnalysis.model_json_schema()
+    if catalog['candidates']:
+        schema['$defs']['EventSelection']['properties']['candidate_id']['enum']=[c['candidate_id'] for c in catalog['candidates']]
+    else:
+        schema['properties']['timeline']['maxItems']=0
+    request={'model':settings.model,'instructions':CANDIDATE_PROMPT,'input':json.dumps(payload,ensure_ascii=False),
+             'text':{'format':{'type':'json_schema','name':'CandidateAnalysis','strict':True,'schema':schema}},
+             'max_output_tokens':6000,'store':False,'truncation':'disabled'}
+    request=adapt_request(request,settings.provider)
+    chars=batch['input_chars']+sum(len(c['quote']) for c in catalog['candidates'])
+    budget={'input_chars':chars,'request_bytes':len(json.dumps(request,ensure_ascii=False,separators=(',',':')).encode())+1024}
+    if chars>16000 or budget['request_bytes']>settings.max_request_bytes:
+        raise MultiAIError('原文及候选联合输入超过预算，未发送。')
+    return request,budget
+
+
+def validate_candidate_output(store,cid,batch,raw):
+    try:parsed=CandidateAnalysis.model_validate(raw)
+    except ValidationError as exc:
+        raise MultiAIError(diagnostic=schema_diagnostic(exc,{'stage':'format'},batch,raw)) from None
+    catalog=build_event_catalog(batch);lookup={c['candidate_id']:c for c in catalog['candidates']}
+    restored=parsed.model_dump();restored.update(schema_version=SCHEMA_VERSION,prompt_version=PROMPT_VERSION,timeline=[])
+    seen=set()
+    for index,selection in enumerate(parsed.timeline):
+        item=lookup.get(selection.candidate_id)
+        context={'section':'timeline','item_index':index,'source_ids':[item['source_id']] if item else []}
+        def reject(rule):
+            detail=diagnostic('candidate_selection',rule,context,batch)
+            detail['candidate_id']=selection.candidate_id
+            raise MultiAIError(diagnostic=detail)
+        if item is None:reject('candidate_not_in_batch')
+        if selection.candidate_id in seen:reject('candidate_duplicate_selection')
+        if selection.kind not in item['allowed_kinds']:reject('candidate_kind_forbidden')
+        seen.add(selection.candidate_id)
+        ref={'source_id':item['source_id'],'quote':item['quote']}
+        restored['timeline'].append({'kind':selection.kind,'text':item['quote'],'reasoning':'','sources':[deepcopy(ref)],
+            'event_source':deepcopy(ref),'time_state':item['time_state'],'time_precision':item['time_precision'],
+            'time_text':item['time_text'],'time_source':deepcopy(ref) if item['time_state']=='explicit' else None})
+    result=validate_case_output(store,cid,batch,restored)
+    result['candidate_selection']={'catalog_version':CANDIDATE_VERSION,'catalog_sha256':catalog['sha256'],
+                                   'raw_output':parsed.model_dump()}
+    return result
+
 
 def validate_case_output(store,cid,batch,raw):
     context={'stage':'format','section':None,'item_index':None,'source_ids':[]}
@@ -257,13 +330,15 @@ def _validate_case_output(store,cid,batch,raw,context):
             'facts':facts,'timeline':timeline,'pending_evidence':pending,'relations':relations,
             'completeness_diagnostics':diagnostics,'cross_document_diagnostics':cross,'verification':'待人工核验','semantic_status':'pending_human_review'}
 
-def analyze_case(store,cid,selected,settings,quota,principal,*,authorized_batch=None,coverage_acknowledged=(),client_factory=None):
+def analyze_case(store,cid,selected,settings,quota,principal,*,authorized_batch=None,coverage_acknowledged=(),client_factory=None,_candidate_protocol=False):
+    """1.0兼容调用入口；网页新请求用analyze_case_candidates，禁止失败后降级。"""
     disabled=settings.ai_disabled_reason(principal)
     if disabled:raise MultiAIError(disabled)
     batch=prepare_case(store,cid,selected,settings)
     if authorized_batch!=batch['batch_sha256']:raise MultiAIError('缺少针对当前案件、文档快照和服务商的批次授权。')
     if not set(batch['required_ack']).issubset(set(coverage_acknowledged)):raise MultiAIError('请逐份确认解析覆盖风险。')
-    request,budget=request_for(batch,settings)
+    request,budget=(candidate_request_for if _candidate_protocol else request_for)(batch,settings)
+    catalog=build_event_catalog(batch) if _candidate_protocol else None
     lease=quota.reserve_ai(settings,principal,**budget);started=time.monotonic()
     receipt={'run_id':uuid.uuid4().hex,'case_id':cid,'execution_mode':'live_sdk' if client_factory is None else 'injected_test_client',
              'provider':settings.provider,'base_url':settings.provider_spec.base_url,'requested_model':settings.model,
@@ -272,6 +347,10 @@ def analyze_case(store,cid,selected,settings,quota,principal,*,authorized_batch=
              'document_snapshots':[{k:d[k] for k in ('document_id','file_sha256','parsed_text_sha256','parser_version')} for d in batch['documents']],
              'input_budget':budget,'started_at':datetime.now(timezone.utc).isoformat(),'call_status':'not_started',
              'format_status':'not_run','evidence_status':'not_run','semantic_status':'pending_human_review','token_usage':None,'billing':billing_record(None)}
+    if _candidate_protocol:
+        receipt.update(schema_version=CANDIDATE_SCHEMA_VERSION,prompt_version=CANDIDATE_PROMPT_VERSION,
+                       prompt_sha256=hashlib.sha256(CANDIDATE_PROMPT.encode()).hexdigest(),
+                       candidate_version=CANDIDATE_VERSION,candidate_catalog_sha256=catalog['sha256'])
     try:
         response=invoke(settings.api_key,request,settings.total_timeout,client_factory,provider=settings.provider)
         for key in ('call_status','provider_status','provider_model','provider_response_id','token_usage','http_status'):receipt[key]=response.get(key)
@@ -279,15 +358,19 @@ def analyze_case(store,cid,selected,settings,quota,principal,*,authorized_batch=
         if response.get('error_code'):receipt['error_code']=response['error_code']
         if response.get('error_code'):raise MultiAIError('模型服务未成功返回；不自动重试。',diagnostic=diagnostic('call','provider_call_failed',{},batch))
         if response.get('provider_status')!='completed' or response.get('refused'):raise MultiAIError('模型拒绝或输出不完整。',diagnostic=diagnostic('call','refused_or_incomplete',{},batch))
-        try:parsed=MultiAnalysis.model_validate_json(response.get('output_text',''))
+        try:parsed=(CandidateAnalysis if _candidate_protocol else MultiAnalysis).model_validate_json(response.get('output_text',''))
         except ValidationError as exc:
             raise MultiAIError(diagnostic=schema_diagnostic(exc,{'stage':'format'},batch,response.get('output_text',''))) from None
         receipt['format_status']='passed'
         # 再检查当前档案，防止请求期间快照或选择发生变化。
         current=prepare_case(store,cid,selected,settings)
         if current['batch_sha256']!=batch['batch_sha256']:raise MultiAIError('档案发生变化，结果拒绝。',diagnostic=diagnostic('batch','batch_changed_during_call',{},batch))
+        if _candidate_protocol and build_event_catalog(current)['sha256']!=receipt['candidate_catalog_sha256']:
+            raise MultiAIError(diagnostic=diagnostic('batch','candidate_catalog_changed',{},current))
         receipt['evidence_status']='checking'
-        result=validate_case_output(store,cid,current,parsed)
+        result=(validate_candidate_output if _candidate_protocol else validate_case_output)(store,cid,current,parsed)
+        if _candidate_protocol:
+            receipt['candidate_selection_ids']=[selection.candidate_id for selection in parsed.timeline]
         receipt['evidence_status']='passed';result['receipt']=receipt
         return result
     except SemanticPolicyError as exc:
@@ -309,6 +392,11 @@ def analyze_case(store,cid,selected,settings,quota,principal,*,authorized_batch=
     finally:
         receipt['duration_ms']=round((time.monotonic()-started)*1000);quota.release(lease)
 
+def analyze_case_candidates(store,cid,selected,settings,quota,principal,**kwargs):
+    """网页新请求唯一入口；1.1不接受1.0自由时间线，不降级、不重试。"""
+    return analyze_case(store,cid,selected,settings,quota,principal,_candidate_protocol=True,**kwargs)
+
+
 def import_case_analysis(store,cid,result):
     """显式导入；在案件副本里完成全部变更，再一次替换本案，不覆盖历史审阅。"""
     from case_store import CaseStore
@@ -317,7 +405,14 @@ def import_case_analysis(store,cid,result):
     receipt=result.get('receipt',{})
     settings=Settings(provider=receipt.get('provider','openai'),model=receipt.get('requested_model',''))
     selected=result['selected_documents'];batch=prepare_case(store,cid,selected,settings)
-    canonical=validate_case_output(store,cid,batch,result['raw_output'])
+    if receipt.get('schema_version')==CANDIDATE_SCHEMA_VERSION and 'candidate_selection' not in result:
+        raise MultiAIError('候选选择审计缺失，未导入。')
+    if 'candidate_selection' in result:
+        audit=result['candidate_selection']
+        canonical=validate_candidate_output(store,cid,batch,audit['raw_output'])
+        if audit!=canonical['candidate_selection']:raise MultiAIError('候选清单或选择记录不匹配，未导入。')
+    else:
+        canonical=validate_case_output(store,cid,batch,result['raw_output'])
     if any(result.get(key)!=value for key,value in canonical.items()):raise MultiAIError('结果被修改或已过期，未导入。')
     staged=CaseStore();staged._cases[cid]=store._case(cid).model_copy(deep=True)
     case=staged._case(cid)
@@ -350,14 +445,14 @@ def import_case_analysis(store,cid,result):
             case.relations.append(old)
         origin={'batch_sha256':batch['batch_sha256'],'left':row['left'],'right':row['right'],
                 'relation_type':row['relation_type'],'reasoning':row['reasoning'],
-                'prompt_version':PROMPT_VERSION,'prompt_sha256':hashlib.sha256(PROMPT.encode()).hexdigest(),
+                'prompt_version':receipt.get('prompt_version',PROMPT_VERSION),'prompt_sha256':receipt.get('prompt_sha256',hashlib.sha256(PROMPT.encode()).hexdigest()),
                 'provider':receipt.get('provider'),'requested_model':receipt.get('requested_model'),
                 'provider_model':receipt.get('provider_model'),'run_id':receipt.get('run_id')}
         if origin not in old.ai_origins:old.ai_origins.append(origin)
     allowed=('run_id','case_id','execution_mode','provider','base_url','requested_model','provider_model','provider_response_id',
              'sdk_version','protocol','schema_version','prompt_version','prompt_sha256','batch_sha256','document_snapshots',
              'input_budget','started_at','call_status','provider_status','format_status','evidence_status','semantic_status',
-             'token_usage','billing','duration_ms')
+             'token_usage','billing','duration_ms','candidate_version','candidate_catalog_sha256','candidate_selection_ids')
     safe_receipt={key:deepcopy(receipt[key]) for key in allowed if key in receipt}
     if safe_receipt and not any(r.get('run_id')==safe_receipt.get('run_id') for r in case.analysis_receipts):
         case.analysis_receipts.append(safe_receipt)

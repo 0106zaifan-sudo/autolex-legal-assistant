@@ -4,6 +4,8 @@ import io
 import zipfile
 
 SOURCE_FILES = (
+    "timeline_candidates.py", "tests/test_event_candidates.py", "tests/test_candidate_ui.py",
+    "docs/V2B_EVENT_CANDIDATES.md", "docs/v2b_event_candidates_tests.txt",
     "tests/test_multidoc_timeline_quote.py", "docs/V2B_TIMELINE_QUOTE_FIX.md",
     "docs/v2b_timeline_quote_tests.txt",
     "tests/test_fact_reasoning_contract.py", "docs/V2B_FACT_REASONING_FIX.md",

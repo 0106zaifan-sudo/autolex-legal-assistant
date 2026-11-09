@@ -2,7 +2,8 @@
 import json
 import streamlit as st
 from security import QuotaStore,SecurityError
-from multidoc_ai import prepare_case,analyze_case,import_case_analysis,MultiAIError
+from multidoc_ai import prepare_case,analyze_case_candidates as analyze_case,import_case_analysis,MultiAIError,candidate_request_for
+from timeline_candidates import build_event_catalog
 
 
 def render_multidoc_ai(store,cid,settings,principal):
@@ -31,10 +32,18 @@ def render_multidoc_ai(store,cid,settings,principal):
         if d['document_id'] in batch['required_ack']:
             with st.expander('解析风险：'+d['file_name']):st.json(d['parse_report'])
             if st.checkbox('我已核查此文件解析风险，仅分析已读取范围',key='md_ack_'+batch['batch_sha256']+'_'+d['document_id']):ack.append(d['document_id'])
+    candidate_ready=True
+    try:
+        catalog=build_event_catalog(batch);candidate_request_for(batch,settings)
+        st.caption(f"本批次可选事件句段：{len(catalog['candidates'])}；候选不代表事实认定。")
+        if catalog['excluded']:
+            st.warning('部分句段因上下文依赖、非事件或绑定限制未提供时间线候选；仍保留原材料与完整性诊断，需人工核查遗漏。')
+    except ValueError:
+        candidate_ready=False;st.error('候选构建或联合请求预算未通过，禁止发送。')
     reason=settings.ai_disabled_reason(principal)
     if reason:st.info(reason)
     consent=st.checkbox(f'我授权将上述全部材料本次发送至{settings.provider_spec.label}，已完成脱敏并理解可能计费',key='md_consent')
-    enabled=not reason and consent and set(batch['required_ack']).issubset(ack)
+    enabled=candidate_ready and not reason and consent and set(batch['required_ack']).issubset(ack)
     if st.button('分析所选批次（一次请求）',disabled=not enabled,key='run_multidoc_ai'):
         st.session_state.pop('_md_result',None);st.session_state.pop('_md_receipt',None)
         try:
