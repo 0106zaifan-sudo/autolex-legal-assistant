@@ -26,7 +26,7 @@ def render_case_workspace(records, root, settings=None, principal=None):
     store = st.session_state['_case_store']
     st.divider()
     st.subheader('案件结构化工作区')
-    st.caption('文件必须明确加入案件。材料记载、主张、推断、信息缺失分开记录；AI及规则输出不会自动成为已确认事实。原件仅存会话内存，请自行保留原件并及时导出。')
+    st.caption('文件必须明确加入案件。材料记载、主张、推断、信息缺失分开记录；AI及规则输出不会自动成为已确认事实。原件仅存会话内存；请显式下载案件工作包以便离线恢复，结构化JSON仍不含原件。')
     with st.form('create_case'):
         title = st.text_input('案件标签（操作者命名，不代表真实案名）', key='case_title', max_chars=120)
         if st.form_submit_button('创建案件', key='create_case_submit'):
@@ -35,12 +35,16 @@ def render_case_workspace(records, root, settings=None, principal=None):
                 st.session_state['active_case'] = cid
             except CaseError as exc:
                 st.error(str(exc))
+    from workspace_ui import render_workspace_import,render_workspace_export
+    render_workspace_import(store)
     cases = store.list_cases()
     if not cases:
         st.info('创建案件后，可选择文档归档、记录引文、复核事实并导出案件。')
         return
     cid = st.selectbox('当前案件', list(cases), format_func=lambda x: cases[x], key='active_case')
     case = store.get_case(cid)
+    if cid in st.session_state.get('_workspace_histories',{}):
+        st.warning('当前案件来自离线导入。复核人与调用回执仅为历史记录，未经身份或服务商认证；恢复不等于重新确认真实性。')
     failed = st.session_state.get('_parse_failures', {})
     options = list(records) + list(failed)
     selected = st.multiselect('明确选择要加入本案的文件', options,
@@ -164,5 +168,8 @@ def render_case_workspace(records, root, settings=None, principal=None):
         render_multidoc_ai(store,cid,settings,principal)
     from relation_ui import render_relations
     render_relations(store,cid)
+    render_workspace_export(store,cid)
+    if case.analysis_receipts:
+        with st.expander('案件分析历史安全回执（不恢复授权）'):st.json(case.analysis_receipts)
     st.download_button('下载本案结构化 JSON（不内嵌原文件字节）', store.export_json(cid),
                        'AutoLex_案件结构化.json', 'application/json', key='case_export_'+cid)

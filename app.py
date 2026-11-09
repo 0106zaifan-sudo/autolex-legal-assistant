@@ -19,6 +19,8 @@ except Exception:
     st.error('Secrets 配置无效，应用已锁定，请管理员检查配置。')
     st.stop()
 principal = enforce_access(settings)
+if st.session_state.pop('_workspace_reset_ai_consent',False):
+    st.session_state['ai_consent']=False
 st.warning('自动提取仅生成原文候选，不能验证案件真实性、法律效力或适用性。模拟样本均为虚构，不可作为法律依据。')
 if 'records' not in st.session_state:
     st.session_state.records = {}
@@ -62,6 +64,10 @@ with st.sidebar:
         for key in ('_md_result','_md_receipt','_md_error','_md_fingerprint','_md_reset_consent','md_consent'):
             st.session_state.pop(key,None)
         st.session_state.pop('_parse_failures', None)
+        st.session_state.pop('ai_consent',None)
+        for key in tuple(st.session_state):
+            if key.startswith(('_workspace_','workspace_')):
+                st.session_state.pop(key,None)
         st.rerun()
     st.divider()
     st.caption('代码、样本和使用文档可下载，解压后在自己的电脑运行。')

@@ -4,6 +4,8 @@ import io
 import zipfile
 
 SOURCE_FILES = (
+    "workspace_bundle.py", "workspace_ui.py", "tests/test_workspace_bundle.py", "tests/test_workspace_ui.py",
+    "docs/WORKSPACE_V2C.md", "docs/v2c_workspace_tests.txt",
     "timeline_candidates.py", "tests/test_event_candidates.py", "tests/test_candidate_ui.py",
     "docs/V2B_EVENT_CANDIDATES.md", "docs/v2b_event_candidates_tests.txt",
     "tests/test_multidoc_timeline_quote.py", "docs/V2B_TIMELINE_QUOTE_FIX.md",
