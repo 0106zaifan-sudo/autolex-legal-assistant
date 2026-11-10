@@ -1,0 +1,36 @@
+{
+  "status": "blocked",
+  "comparison_performed": false,
+  "real_model_calls": 0,
+  "secrets_accessed": false,
+  "checks": {
+    "receipt_available": "unavailable",
+    "receipt_valid": "not_checked",
+    "workspace_available": "not_checked",
+    "workspace_valid": "not_checked",
+    "case_id": "not_checked",
+    "four_b01_snapshots": "not_checked",
+    "original_and_parsed_bytes": "not_checked",
+    "protocol": "not_checked",
+    "prompt_hash": "not_checked",
+    "batch_sha256": "not_checked",
+    "pending_catalog_sha256": "not_checked"
+  },
+  "stop_reason": "receipt_unavailable",
+  "membership": [
+    {
+      "candidate_id": "PE_1c2855f9e9e11f2b97762e19",
+      "status": "not_compared"
+    },
+    {
+      "candidate_id": "PE_8157e098231cf885924d2f61",
+      "status": "not_compared"
+    },
+    {
+      "candidate_id": "PE_79f4a8f3177d8404e67f5baa",
+      "status": "not_compared"
+    }
+  ],
+  "input_mode": "user_workspace_zip",
+  "scope_note": "当前可访问工作区未收到实际附件；未读取真实回执或档案，不能开展真实成员判断。此状态不是哈希不匹配的结论。"
+}

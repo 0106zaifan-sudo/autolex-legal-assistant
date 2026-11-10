@@ -1,0 +1,24 @@
+test_all_gates_match_before_exact_mixed_membership (test_exact_receipt_audit.ExactAudit.test_all_gates_match_before_exact_mixed_membership) ... ok
+test_batch_sha_mismatch_stops (test_exact_receipt_audit.ExactAudit.test_batch_sha_mismatch_stops) ... ok
+test_case_id_mismatch_stops (test_exact_receipt_audit.ExactAudit.test_case_id_mismatch_stops) ... ok
+test_catalog_sha_mismatch_stops (test_exact_receipt_audit.ExactAudit.test_catalog_sha_mismatch_stops) ... ok
+test_corrupt_zip_never_compares (test_exact_receipt_audit.ExactAudit.test_corrupt_zip_never_compares) ... ok
+test_duplicate_json_key_rejected (test_exact_receipt_audit.ExactAudit.test_duplicate_json_key_rejected) ... ok
+test_existing_output_is_not_overwritten (test_exact_receipt_audit.ExactAudit.test_existing_output_is_not_overwritten) ... ok
+test_file_sha_mismatch_stops (test_exact_receipt_audit.ExactAudit.test_file_sha_mismatch_stops) ... ok
+test_missing_receipt_never_restores_or_creates_fixture_case (test_exact_receipt_audit.ExactAudit.test_missing_receipt_never_restores_or_creates_fixture_case) ... ok
+test_original_bytes_corrupt_stops (test_exact_receipt_audit.ExactAudit.test_original_bytes_corrupt_stops) ... ok
+test_other_cases_in_same_store_are_not_used_or_modified (test_exact_receipt_audit.ExactAudit.test_other_cases_in_same_store_are_not_used_or_modified) ... ok
+test_output_cannot_overwrite_input (test_exact_receipt_audit.ExactAudit.test_output_cannot_overwrite_input) ... ok
+test_parsed_sha_mismatch_stops (test_exact_receipt_audit.ExactAudit.test_parsed_sha_mismatch_stops) ... ok
+test_parser_version_mismatch_stops (test_exact_receipt_audit.ExactAudit.test_parser_version_mismatch_stops) ... ok
+test_prompt_hash_mismatch_stops_before_prepare (test_exact_receipt_audit.ExactAudit.test_prompt_hash_mismatch_stops_before_prepare) ... ok
+test_protocol_version_mismatch_stops (test_exact_receipt_audit.ExactAudit.test_protocol_version_mismatch_stops) ... ok
+test_unrelated_fourth_material_missing_refuses (test_exact_receipt_audit.ExactAudit.test_unrelated_fourth_material_missing_refuses) ... ok
+test_user_archive_path_reads_only_no_sdk_secrets_or_quota (test_exact_receipt_audit.ExactAudit.test_user_archive_path_reads_only_no_sdk_secrets_or_quota) ... ok
+test_wrong_receipt_target_stops (test_exact_receipt_audit.ExactAudit.test_wrong_receipt_target_stops) ... ok
+
+----------------------------------------------------------------------
+Ran 19 tests in 0.734s
+
+OK
