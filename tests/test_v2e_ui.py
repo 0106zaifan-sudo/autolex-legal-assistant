@@ -14,6 +14,8 @@ class V2EUI(IsolatedUITestCase):
   f=self.f
   app=AppTest.from_string("import streamlit as st\nfrom multidoc_ui import render_multidoc_ai\nrender_multidoc_ai(st.session_state['store'],st.session_state['cid'],st.session_state['settings'],st.session_state['principal'])",default_timeout=30)
   for k,v in {'store':f.store,'cid':f.cid,'settings':f.settings,'principal':f.settings.principal}.items():app.session_state[k]=v
+  # 保留1.2历史入口回归；新的默认1.3由独立AppTest覆盖。
+  app.session_state['md_protocol']='1.2'
   app.run();app.multiselect(key='md_select_'+f.cid).set_value(list(f.ids.values())).run()
   return app
  def authorize(self,app):

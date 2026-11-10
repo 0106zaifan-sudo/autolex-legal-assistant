@@ -1,3 +1,17 @@
+# 1.3：程序拥有证据目录哈希
+
+分支`feature/v2e-program-owned-catalog-hash`，基线`0e65f9501c65d9384b812c56b75aac0b98b44613`，干净基线独立worktree。基线716项通过，64.023秒。
+
+先新增20项缺1.3模块失败的规格测试，最终新增29项（26核心、3 AppTest）。完整`python -m unittest discover -s tests -v`：**745项全部通过，65.706秒**。原716项检查意图保留；仅将`tests/test_v2e_ui.py`历史夹具显式设置1.2，旧断言全部保留，新默认1.3由独立AppTest覆盖。
+
+1.3响应Schema完全没有pending_catalog_sha256字段，不设默认、不补字段、不调用旧1.2验证器修补响应。程序请求前计算目录SHA，响应后重建比对，保存安全回执及审计。模型仍显式选择全部PE来源；未知/跨案/目录变化/版本混用拒绝。旧1.2模块字节不变，缺哈希仍拒绝。四模块仍一次请求，显式导入及ZIP重验保持。
+
+官方SDK+本地HTTP Mock覆盖两服务商，验证缺少模型回传哈希的新响应可通过格式及绑定，不自动写案；篡改目录、哈希、非法编号及重算清单的恶意ZIP恢复均拒绝且原子。AppTest验证新默认、重新授权、成功不自动导入及失败回执。DeepSeek预算94137、SDK本地序列化93113字节；真实Token未测为null。原件、Gold、旧预算及核心安全规则未改。
+
+本轮真实模型调用0次，不读改Secrets或现有额度，不部署/重试/合并。Mock结果不能证明真实DeepSeek或法律语义通过。详见[设计与兼容风险](docs/V13_CATALOG_OWNERSHIP.md)、[预算](docs/V13_B01_BUDGET.json)、[完整日志](docs/v13_offline_tests.txt)。
+
+以下保留历史报告。
+
 # V2.0-E首次B01格式失败：安全Schema诊断
 
 分支`feature/v2e-schema-diagnostics`，基线`f4717133631a9ad25074878540d174f39d9bd2be`，干净基线独立worktree。基线686项通过，57.179秒。

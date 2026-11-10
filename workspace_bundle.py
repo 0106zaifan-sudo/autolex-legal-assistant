@@ -270,9 +270,12 @@ def validate_receipts(case,*,require_pending_statements=True):
             doc=case.documents.get(snapshot['document_id']);require(doc is not None,'receipt_document_reference')
             require(all(getattr(doc,k)==v for k,v in snapshot.items()),'receipt_snapshot_mismatch')
         require(receipt.get('provider') in ('openai','deepseek') and receipt.get('format_status')=='passed' and receipt.get('evidence_status')=='passed','receipt_validation_status')
-        require(receipt.get('schema_version') in ('multidoc-analysis/1.0','multidoc-analysis/1.1','multidoc-analysis/1.2'),'receipt_schema_version')
-        if receipt['schema_version']=='multidoc-analysis/1.2':
-            from multidoc_v12 import validate_saved_receipt
+        require(receipt.get('schema_version') in ('multidoc-analysis/1.0','multidoc-analysis/1.1','multidoc-analysis/1.2','multidoc-analysis/1.3'),'receipt_schema_version')
+        if receipt['schema_version'] in ('multidoc-analysis/1.2','multidoc-analysis/1.3'):
+            if receipt['schema_version']=='multidoc-analysis/1.3':
+                from multidoc_v13 import validate_saved_receipt
+            else:
+                from multidoc_v12 import validate_saved_receipt
             try:validate_saved_receipt(case,receipt,require_statements=require_pending_statements)
             except (ValueError,KeyError,TypeError):require(False,'receipt_pending_selection_invalid')
         elif receipt['schema_version']=='multidoc-analysis/1.1':

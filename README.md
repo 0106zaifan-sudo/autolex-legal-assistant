@@ -221,3 +221,5 @@ CASE-001 B01技术术语来源范围、显式标题引用及语义限制见[调�
 V2.0-E已集成`multidoc-analysis/1.2`：联合分析默认选择1.2，保留1.1历史入口；待核实事项由模型明确选择PE编号，程序恢复原文并严格核验，四个分析模块仍为一次请求。预览不会自动导入，所有结果待人工核验；1.0/1.1历史及案件ZIP继续按版本校验。[技术、兼容及人工网页验收说明](docs/V2E_INTEGRATION.md)；[离线预算报告](docs/V2E_B01_BUDGET.json)。可运行`python tools/prepare_v2e_b01.py --output /tmp/AutoLEX_V2E_B01_budget.json`复核完整B01，工具只用本地HTTP Mock，无真实模型或Secrets访问。本轮686项离线测试通过，真实DeepSeek1.2验收仍待另行人工授权。
 
 V2.0-E格式失败新增安全Schema诊断：错误类型、白名单字段路径、总数及截断标记；不记录模型内容、不自动修复。详见[排查报告与诊断字段](docs/V2E_SCHEMA_DIAGNOSTICS.md)。本轮716项离线通过，不能据此认定首次真实格式失败已定位或解决。
+
+协议1.3将pending目录哈希交由程序管理，模型不再回传`pending_catalog_sha256`；程序前后重建目录比较，回执和审计仍保存哈希。新会话默认1.3，旧会话请明确选择1.3并重新授权；1.2历史规则保持，缺字段仍拒绝。[1.3设计、ZIP兼容与验收步骤](docs/V13_CATALOG_OWNERSHIP.md)，[完整B01离线预算](docs/V13_B01_BUDGET.json)。本轮745项离线通过，未进行真实模型验收。

@@ -344,13 +344,16 @@ def analyze_case(store,cid,selected,settings,quota,principal,*,authorized_batch=
     disabled=settings.ai_disabled_reason(principal)
     if disabled:raise MultiAIError(disabled)
     if _pending_protocol:
-        import multidoc_v12 as v12
+        if _pending_protocol=='1.3':
+            import multidoc_v13 as pending
+        else:
+            import multidoc_v12 as pending
     _candidate_protocol=_candidate_protocol or _pending_protocol
-    prepare=v12.prepare_case if _pending_protocol else prepare_case
+    prepare=pending.prepare_case if _pending_protocol else prepare_case
     batch=prepare(store,cid,selected,settings)
     if authorized_batch!=batch['batch_sha256']:raise MultiAIError('缺少针对当前案件、文档快照和服务商的批次授权。')
     if not set(batch['required_ack']).issubset(set(coverage_acknowledged)):raise MultiAIError('请逐份确认解析覆盖风险。')
-    request,budget=(v12.request_for if _pending_protocol else candidate_request_for if _candidate_protocol else request_for)(batch,settings)
+    request,budget=(pending.request_for if _pending_protocol else candidate_request_for if _candidate_protocol else request_for)(batch,settings)
     catalog=build_event_catalog(batch) if _candidate_protocol else None
     lease=quota.reserve_ai(settings,principal,**budget);started=time.monotonic()
     receipt={'run_id':uuid.uuid4().hex,'case_id':cid,'execution_mode':'live_sdk' if client_factory is None else 'injected_test_client',
@@ -365,9 +368,9 @@ def analyze_case(store,cid,selected,settings,quota,principal,*,authorized_batch=
                        prompt_sha256=hashlib.sha256(CANDIDATE_PROMPT.encode()).hexdigest(),
                        candidate_version=CANDIDATE_VERSION,candidate_catalog_sha256=catalog['sha256'])
     if _pending_protocol:
-        receipt.update(schema_version=v12.SCHEMA_VERSION,prompt_version=v12.PROMPT_VERSION,
-                       prompt_sha256=hashlib.sha256(v12.PROMPT.encode()).hexdigest(),
-                       pending_catalog_version=v12.CATALOG_VERSION,pending_catalog_sha256=batch['pending_catalog']['sha256'])
+        receipt.update(schema_version=pending.SCHEMA_VERSION,prompt_version=pending.PROMPT_VERSION,
+                       prompt_sha256=hashlib.sha256(pending.PROMPT.encode()).hexdigest(),
+                       pending_catalog_version=pending.CATALOG_VERSION,pending_catalog_sha256=batch['pending_catalog']['sha256'])
     try:
         response=invoke(settings.api_key,request,settings.total_timeout,client_factory,provider=settings.provider)
         for key in ('call_status','provider_status','provider_model','provider_response_id','token_usage','http_status'):receipt[key]=response.get(key)
@@ -375,7 +378,7 @@ def analyze_case(store,cid,selected,settings,quota,principal,*,authorized_batch=
         if response.get('error_code'):receipt['error_code']=response['error_code']
         if response.get('error_code'):raise MultiAIError('模型服务未成功返回；不自动重试。',diagnostic=diagnostic('call','provider_call_failed',{},batch))
         if response.get('provider_status')!='completed' or response.get('refused'):raise MultiAIError('模型拒绝或输出不完整。',diagnostic=diagnostic('call','refused_or_incomplete',{},batch))
-        try:parsed=(v12.Analysis12 if _pending_protocol else CandidateAnalysis if _candidate_protocol else MultiAnalysis).model_validate_json(response.get('output_text',''))
+        try:parsed=((pending.Analysis13 if _pending_protocol=='1.3' else pending.Analysis12) if _pending_protocol else CandidateAnalysis if _candidate_protocol else MultiAnalysis).model_validate_json(response.get('output_text',''))
         except ValidationError as exc:
             raise MultiAIError(diagnostic=schema_diagnostic(exc,{'stage':'format'},batch,response.get('output_text',''))) from None
         receipt['format_status']='passed'
@@ -384,11 +387,13 @@ def analyze_case(store,cid,selected,settings,quota,principal,*,authorized_batch=
         if current['batch_sha256']!=batch['batch_sha256']:raise MultiAIError('档案发生变化，结果拒绝。',diagnostic=diagnostic('batch','batch_changed_during_call',{},batch))
         if _candidate_protocol and build_event_catalog(current)['sha256']!=receipt['candidate_catalog_sha256']:
             raise MultiAIError(diagnostic=diagnostic('batch','candidate_catalog_changed',{},current))
+        if _pending_protocol and current['pending_catalog']['sha256']!=receipt['pending_catalog_sha256']:
+            raise MultiAIError(diagnostic=diagnostic('pending_catalog','pending_catalog_changed_during_call',{},current))
         receipt['evidence_status']='checking'
-        result=(v12.validate_output if _pending_protocol else validate_candidate_output if _candidate_protocol else validate_case_output)(store,cid,current,parsed)
+        result=(pending.validate_output if _pending_protocol else validate_candidate_output if _candidate_protocol else validate_case_output)(store,cid,current,parsed)
         if _candidate_protocol:
             receipt['candidate_selection_ids']=[selection.candidate_id for selection in parsed.timeline]
-        if _pending_protocol:receipt.update(v12.receipt_fields(current,parsed))
+        if _pending_protocol:receipt.update(pending.receipt_fields(current,parsed))
         receipt['evidence_status']='passed';result['receipt']=receipt
         return result
     except SemanticPolicyError as exc:
@@ -423,12 +428,16 @@ def import_case_analysis(store,cid,result):
     receipt=result.get('receipt',{})
     settings=Settings(provider=receipt.get('provider','openai'),model=receipt.get('requested_model',''))
     selected=result['selected_documents']
-    is12=receipt.get('schema_version')=='multidoc-analysis/1.2' or result.get('schema_version')=='multidoc-analysis/1.2'
-    if is12:
-        import multidoc_v12 as v12
-        batch=v12.prepare_case(store,cid,selected,settings)
-        canonical=v12.validate_output(store,cid,batch,result['raw_output'])
-        v12.validate_receipt_result(receipt,batch,canonical)
+    versions={receipt.get('schema_version'),result.get('schema_version')}
+    is_pending=bool(versions & {'multidoc-analysis/1.2','multidoc-analysis/1.3'})
+    if is_pending:
+        if 'multidoc-analysis/1.3' in versions:
+            import multidoc_v13 as pending
+        else:
+            import multidoc_v12 as pending
+        batch=pending.prepare_case(store,cid,selected,settings)
+        canonical=pending.validate_output(store,cid,batch,result['raw_output'])
+        pending.validate_receipt_result(receipt,batch,canonical)
         for previous in store.get_case(cid).analysis_receipts:
             if previous.get('run_id')==receipt.get('run_id') and previous.get('analysis_output_sha256')!=receipt.get('analysis_output_sha256'):
                 raise MultiAIError(diagnostic=diagnostic('import','run_id_conflict',{},batch))
@@ -486,7 +495,7 @@ def import_case_analysis(store,cid,result):
              'token_usage','billing','duration_ms','candidate_version','candidate_catalog_sha256','candidate_selection_ids',
              'pending_catalog_version','pending_catalog_sha256','pending_selection_ids','analysis_output_sha256')
     safe_receipt={key:deepcopy(receipt[key]) for key in allowed if key in receipt}
-    if is12:safe_receipt['pending_statement_ids']=pending_statement_ids
+    if is_pending:safe_receipt['pending_statement_ids']=pending_statement_ids
     if safe_receipt and not any(r.get('run_id')==safe_receipt.get('run_id') for r in case.analysis_receipts):
         case.analysis_receipts.append(safe_receipt)
     case.schema_version='1.2'

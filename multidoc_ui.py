@@ -8,11 +8,13 @@ from timeline_candidates import build_event_catalog
 
 def render_multidoc_ai(store,cid,settings,principal):
     st.subheader('AI 多文档综合分析')
-    protocol=st.selectbox('联合分析协议',['1.2','1.1'],key='md_protocol',
-                          format_func=lambda v:'1.2 · 证据编号选择' if v=='1.2' else '1.1 · 历史协议')
-    if protocol=='1.2':
-        import multidoc_v12 as v12
-    prepare=v12.prepare_case if protocol=='1.2' else prepare_case
+    protocol=st.selectbox('联合分析协议',['1.3','1.2','1.1'],key='md_protocol',
+                          format_func=lambda v:'1.3 · 程序管理目录哈希' if v=='1.3' else v+' · 历史协议')
+    if protocol=='1.3':
+        import multidoc_v13 as pending
+    elif protocol=='1.2':
+        import multidoc_v12 as pending
+    prepare=pending.prepare_case if protocol in ('1.2','1.3') else prepare_case
     case=store.get_case(cid)
     selected=st.multiselect('选择本案2—4份联合分析材料',list(case.documents),
                            format_func=lambda did:case.documents[did].file_name+' · '+did[:8],key='md_select_'+cid)
@@ -43,9 +45,9 @@ def render_multidoc_ai(store,cid,settings,principal):
     candidate_ready=True
     try:
         catalog=build_event_catalog(batch)
-        (v12.request_for if protocol=='1.2' else candidate_request_for)(batch,settings)
-        if protocol=='1.2':
-            st.caption(f"协议1.2待核实证据目录：{len(batch['pending_catalog']['entries'])}项；合法编号不代表问题语义成立。")
+        (pending.request_for if protocol in ('1.2','1.3') else candidate_request_for)(batch,settings)
+        if protocol in ('1.2','1.3'):
+            st.caption(f"协议{protocol}待核实证据目录：{len(batch['pending_catalog']['entries'])}项；合法编号不代表问题语义成立。")
         st.caption(f"本批次可选事件句段：{len(catalog['candidates'])}；候选不代表事实认定。")
         if catalog['excluded']:
             st.warning('部分句段因上下文依赖、非事件或绑定限制未提供时间线候选；仍保留原材料与完整性诊断，需人工核查遗漏。')
@@ -58,7 +60,7 @@ def render_multidoc_ai(store,cid,settings,principal):
     if st.button('分析所选批次（一次请求）',disabled=not enabled,key='run_multidoc_ai'):
         st.session_state.pop('_md_result',None);st.session_state.pop('_md_receipt',None)
         try:
-            result=(v12.analyze_case if protocol=='1.2' else analyze_case)(store,cid,selected,settings,QuotaStore(settings.db_path),principal,
+            result=(pending.analyze_case if protocol in ('1.2','1.3') else analyze_case)(store,cid,selected,settings,QuotaStore(settings.db_path),principal,
                                 authorized_batch=batch['batch_sha256'],coverage_acknowledged=ack)
             st.session_state['_md_result']=result;st.session_state['_md_receipt']=result['receipt']
         except (MultiAIError,SecurityError) as exc:
