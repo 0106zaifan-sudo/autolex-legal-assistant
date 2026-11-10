@@ -25,7 +25,7 @@ MAX_DOCUMENTS=16
 MAX_RATIO=200
 HASH=re.compile(r'^[0-9a-f]{64}$')
 CASE_ID=re.compile(r'^case_[0-9a-f]{32}$')
-RECEIPT_KEYS=frozenset('run_id case_id execution_mode provider base_url requested_model provider_model provider_response_id sdk_version protocol schema_version prompt_version prompt_sha256 batch_sha256 document_snapshots input_budget started_at call_status provider_status format_status evidence_status semantic_status http_status token_usage billing duration_ms candidate_version candidate_catalog_sha256 candidate_selection_ids'.split())
+RECEIPT_KEYS=frozenset('run_id case_id execution_mode provider base_url requested_model provider_model provider_response_id sdk_version protocol schema_version prompt_version prompt_sha256 batch_sha256 document_snapshots input_budget started_at call_status provider_status format_status evidence_status semantic_status http_status token_usage billing duration_ms candidate_version candidate_catalog_sha256 candidate_selection_ids pending_catalog_version pending_catalog_sha256 pending_selection_ids pending_statement_ids analysis_output_sha256'.split())
 SECRET_KEYS=frozenset(('api_key','openai_api_key','deepseek_api_key','gh_token','github_token','password','password_hash','authorization','secrets','authorized_batch','principal','auth_state'))
 CREDENTIAL=re.compile(r'(?:sk-[A-Za-z0-9_-]{24,}|gh[pousr]_[A-Za-z0-9]{25,}|-----BEGIN (?:RSA |OPENSSH )?PRIVATE KEY)')
 
@@ -258,7 +258,7 @@ def validate_graph(store,cid):
     validate_receipts(case)
 
 
-def validate_receipts(case):
+def validate_receipts(case,*,require_pending_statements=True):
     runs=set();catalogs={}
     for receipt in case.analysis_receipts:
         require(set(receipt)<=RECEIPT_KEYS and receipt.get('case_id')==case.case_id,'receipt_fields_or_case')
@@ -270,8 +270,12 @@ def validate_receipts(case):
             doc=case.documents.get(snapshot['document_id']);require(doc is not None,'receipt_document_reference')
             require(all(getattr(doc,k)==v for k,v in snapshot.items()),'receipt_snapshot_mismatch')
         require(receipt.get('provider') in ('openai','deepseek') and receipt.get('format_status')=='passed' and receipt.get('evidence_status')=='passed','receipt_validation_status')
-        require(receipt.get('schema_version') in ('multidoc-analysis/1.0','multidoc-analysis/1.1'),'receipt_schema_version')
-        if receipt['schema_version']=='multidoc-analysis/1.1':
+        require(receipt.get('schema_version') in ('multidoc-analysis/1.0','multidoc-analysis/1.1','multidoc-analysis/1.2'),'receipt_schema_version')
+        if receipt['schema_version']=='multidoc-analysis/1.2':
+            from multidoc_v12 import validate_saved_receipt
+            try:validate_saved_receipt(case,receipt,require_statements=require_pending_statements)
+            except (ValueError,KeyError,TypeError):require(False,'receipt_pending_selection_invalid')
+        elif receipt['schema_version']=='multidoc-analysis/1.1':
             from multidoc_ai import prepare_case
             from timeline_candidates import build_event_catalog,CANDIDATE_VERSION
             from security import Settings
@@ -351,12 +355,12 @@ def validate_analysis_attachment(temp,cid,analysis):
     from copy import deepcopy
     require(analysis.get('case_id')==cid and isinstance(analysis.get('receipt'),dict),'analysis_case_mismatch')
     # 仅白名单结构化分析，绝不导出任意会话字典或认证状态。
-    allowed={'schema_version','prompt_version','case_id','batch_sha256','selected_documents','documents','source_manifest','raw_output','per_document','facts','timeline','pending_evidence','relations','completeness_diagnostics','cross_document_diagnostics','verification','semantic_status','candidate_selection','receipt'}
+    allowed={'schema_version','prompt_version','case_id','batch_sha256','selected_documents','documents','source_manifest','raw_output','per_document','facts','timeline','pending_evidence','relations','completeness_diagnostics','cross_document_diagnostics','verification','semantic_status','candidate_selection','pending_selection','receipt'}
     require(set(analysis)<=allowed,'analysis_extra_fields')
     receipt=analysis['receipt'];require(set(receipt)<=RECEIPT_KEYS and receipt.get('evidence_status')=='passed' and receipt.get('format_status')=='passed','analysis_not_validated')
     require(receipt.get('case_id')==cid and receipt.get('batch_sha256')==analysis.get('batch_sha256'),'analysis_receipt_binding')
     require({d['document_id'] for d in receipt.get('document_snapshots',[])}==set(analysis.get('selected_documents',[])),'analysis_receipt_scope')
-    validate_receipts(CaseBundle(case_id=cid,title=temp._case(cid).title,documents=temp._case(cid).documents,analysis_receipts=[receipt]))
+    validate_receipts(CaseBundle(case_id=cid,title=temp._case(cid).title,documents=temp._case(cid).documents,analysis_receipts=[receipt]),require_pending_statements=False)
     safe_tree(analysis)
     clone=CaseStore();clone._cases[cid]=temp.get_case(cid)
     import_case_analysis(clone,cid,deepcopy(analysis))  # 验证后的副本变化丢弃，不自动归档附件。

@@ -1,0 +1,113 @@
+{
+  "declaration": "完全虚构，仅用于软件测试；SDK本地HTTP Mock序列化，不是真实模型验收",
+  "schema_version": "multidoc-analysis/1.2",
+  "real_model_calls": 0,
+  "quota_database_accessed": false,
+  "rows": [
+    {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "schema_version": "multidoc-analysis/1.2",
+      "prompt_version": "multidoc/pending-selection-v1",
+      "prompt_sha256": "ff6bcb10ad13d693d2ccbe0377bb9a24720320c7e08296be30e772f52c36e419",
+      "batch_sha256": "ebc0fa5223d1a9278f8900f77f1c3acbe4d67986eff8f88c65c692c7e4e9f434",
+      "documents": [
+        {
+          "file_name": "模拟_CASE-001_D01_现场记录.pdf",
+          "document_id": "8f6460d477d7015e2eabd60779d663362b81e9d34c4459521d83f82929e7bb86",
+          "file_sha256": "93cc905cda09d0411d73c55d342af392df3dd4a86e2f4ac57d5f3c683c85760e"
+        },
+        {
+          "file_name": "模拟_CASE-001_D02_驾驶人询问笔录.docx",
+          "document_id": "ad6fbf0b36ee3e6e05d639b1c424aa3ba296bc57443ae41b3d479ffaecdd9907",
+          "file_sha256": "4fd50d6b090fc53aa97c3edc7ba5f69948f5263295636515b087d0106de25749"
+        },
+        {
+          "file_name": "模拟_CASE-001_D03_企业技术说明.pdf",
+          "document_id": "b1eb5114fa545f56b58837b5a0c28f2d68225c8114a957f4f2582524fdff6161",
+          "file_sha256": "7e73c587e1334a65698826c9bf3132f589a3ed57aa0ed2eab16cebec56735af6"
+        },
+        {
+          "file_name": "模拟_CASE-001_D04_EDR摘要.pdf",
+          "document_id": "caac3f3a7a6cb89b7ca50cc202acf017d22dab01227377c6b5b5cd06e1ec9c97",
+          "file_sha256": "9cbfdb75879d0e4c086b341fdbf62a955cd7bbfef2dc3e7c797e4ccc5de92a03"
+        }
+      ],
+      "pending_catalog_version": "pending-source-catalog/1",
+      "pending_catalog_sha256": "fe4bd97eec207a6a840c37fa7ec31072b6ed962ae5117bd13c6953fe3768de29",
+      "source_count": 62,
+      "pending_candidate_count": 62,
+      "required_coverage_acknowledgements": [
+        "8f6460d477d7015e2eabd60779d663362b81e9d34c4459521d83f82929e7bb86",
+        "b1eb5114fa545f56b58837b5a0c28f2d68225c8114a957f4f2582524fdff6161",
+        "caac3f3a7a6cb89b7ca50cc202acf017d22dab01227377c6b5b5cd06e1ec9c97"
+      ],
+      "budget": {
+        "input_chars": 2015,
+        "request_bytes": 94403
+      },
+      "sdk_http_mock_wire_bytes": 93379,
+      "max_request_bytes": 128000,
+      "max_output_tokens": 6000,
+      "reasoning_configuration": {
+        "effort": "none"
+      },
+      "input_tokens": null,
+      "output_tokens": null,
+      "token_measurement_status": "not_measured_no_real_model",
+      "automatic_retries": 0
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-4.1-mini",
+      "schema_version": "multidoc-analysis/1.2",
+      "prompt_version": "multidoc/pending-selection-v1",
+      "prompt_sha256": "ff6bcb10ad13d693d2ccbe0377bb9a24720320c7e08296be30e772f52c36e419",
+      "batch_sha256": "ad4045e4c35b68b65e639aec52974632e56e88bd0cd354dedc59ac259cdbac80",
+      "documents": [
+        {
+          "file_name": "模拟_CASE-001_D01_现场记录.pdf",
+          "document_id": "8f6460d477d7015e2eabd60779d663362b81e9d34c4459521d83f82929e7bb86",
+          "file_sha256": "93cc905cda09d0411d73c55d342af392df3dd4a86e2f4ac57d5f3c683c85760e"
+        },
+        {
+          "file_name": "模拟_CASE-001_D02_驾驶人询问笔录.docx",
+          "document_id": "ad6fbf0b36ee3e6e05d639b1c424aa3ba296bc57443ae41b3d479ffaecdd9907",
+          "file_sha256": "4fd50d6b090fc53aa97c3edc7ba5f69948f5263295636515b087d0106de25749"
+        },
+        {
+          "file_name": "模拟_CASE-001_D03_企业技术说明.pdf",
+          "document_id": "b1eb5114fa545f56b58837b5a0c28f2d68225c8114a957f4f2582524fdff6161",
+          "file_sha256": "7e73c587e1334a65698826c9bf3132f589a3ed57aa0ed2eab16cebec56735af6"
+        },
+        {
+          "file_name": "模拟_CASE-001_D04_EDR摘要.pdf",
+          "document_id": "caac3f3a7a6cb89b7ca50cc202acf017d22dab01227377c6b5b5cd06e1ec9c97",
+          "file_sha256": "9cbfdb75879d0e4c086b341fdbf62a955cd7bbfef2dc3e7c797e4ccc5de92a03"
+        }
+      ],
+      "pending_catalog_version": "pending-source-catalog/1",
+      "pending_catalog_sha256": "ec1944657076b4bf894b7658b3a4e9eb1ed349419a60999f9493e5fe2b0efc95",
+      "source_count": 62,
+      "pending_candidate_count": 62,
+      "required_coverage_acknowledgements": [
+        "8f6460d477d7015e2eabd60779d663362b81e9d34c4459521d83f82929e7bb86",
+        "b1eb5114fa545f56b58837b5a0c28f2d68225c8114a957f4f2582524fdff6161",
+        "caac3f3a7a6cb89b7ca50cc202acf017d22dab01227377c6b5b5cd06e1ec9c97"
+      ],
+      "budget": {
+        "input_chars": 2015,
+        "request_bytes": 94423
+      },
+      "sdk_http_mock_wire_bytes": 93399,
+      "max_request_bytes": 128000,
+      "max_output_tokens": 6000,
+      "reasoning_configuration": null,
+      "input_tokens": null,
+      "output_tokens": null,
+      "token_measurement_status": "not_measured_no_real_model",
+      "automatic_retries": 0
+    }
+  ],
+  "authorization": "本报告不授予任何调用许可，不代表实际剩余额度充足"
+}

@@ -4,6 +4,20 @@ import io
 import zipfile
 
 SOURCE_FILES = (
+    'multidoc_v12.py',
+    'pending_catalog.py',
+    'tools/prepare_v2e_b01.py',
+    'tests/test_v2e_integration.py',
+    'tests/test_v2e_ui.py',
+    'docs/V2E_INTEGRATION.md',
+    'docs/V2E_B01_BUDGET.json',
+    'docs/v2e_offline_tests.txt',
+    'datasets/CASE-001/standard/manifest.json',
+    'datasets/CASE-001/standard/materials/模拟_CASE-001_D01_现场记录.pdf',
+    'datasets/CASE-001/standard/materials/模拟_CASE-001_D02_驾驶人询问笔录.docx',
+    'datasets/CASE-001/standard/materials/模拟_CASE-001_D03_企业技术说明.pdf',
+    'datasets/CASE-001/standard/materials/模拟_CASE-001_D04_EDR摘要.pdf',
+
     "conflict_review.py", "conflict_ui.py", "tests/test_conflict_review.py", "tests/test_conflict_ui.py",
     "docs/CONFLICT_REVIEW_V2D.md", "docs/v2d_conflict_review_tests.txt",
     "workspace_bundle.py", "workspace_ui.py", "tests/test_workspace_bundle.py", "tests/test_workspace_ui.py",

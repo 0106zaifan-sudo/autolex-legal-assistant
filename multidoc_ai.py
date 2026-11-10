@@ -339,14 +339,18 @@ def _validate_case_output(store,cid,batch,raw,context):
             'facts':facts,'timeline':timeline,'pending_evidence':pending,'relations':relations,
             'completeness_diagnostics':diagnostics,'cross_document_diagnostics':cross,'verification':'待人工核验','semantic_status':'pending_human_review'}
 
-def analyze_case(store,cid,selected,settings,quota,principal,*,authorized_batch=None,coverage_acknowledged=(),client_factory=None,_candidate_protocol=False):
-    """1.0兼容调用入口；网页新请求用analyze_case_candidates，禁止失败后降级。"""
+def analyze_case(store,cid,selected,settings,quota,principal,*,authorized_batch=None,coverage_acknowledged=(),client_factory=None,_candidate_protocol=False,_pending_protocol=False):
+    """复用一次调用门禁；1.0/1.1历史入口，1.2独立分派；禁止失败后降级。"""
     disabled=settings.ai_disabled_reason(principal)
     if disabled:raise MultiAIError(disabled)
-    batch=prepare_case(store,cid,selected,settings)
+    if _pending_protocol:
+        import multidoc_v12 as v12
+    _candidate_protocol=_candidate_protocol or _pending_protocol
+    prepare=v12.prepare_case if _pending_protocol else prepare_case
+    batch=prepare(store,cid,selected,settings)
     if authorized_batch!=batch['batch_sha256']:raise MultiAIError('缺少针对当前案件、文档快照和服务商的批次授权。')
     if not set(batch['required_ack']).issubset(set(coverage_acknowledged)):raise MultiAIError('请逐份确认解析覆盖风险。')
-    request,budget=(candidate_request_for if _candidate_protocol else request_for)(batch,settings)
+    request,budget=(v12.request_for if _pending_protocol else candidate_request_for if _candidate_protocol else request_for)(batch,settings)
     catalog=build_event_catalog(batch) if _candidate_protocol else None
     lease=quota.reserve_ai(settings,principal,**budget);started=time.monotonic()
     receipt={'run_id':uuid.uuid4().hex,'case_id':cid,'execution_mode':'live_sdk' if client_factory is None else 'injected_test_client',
@@ -360,6 +364,10 @@ def analyze_case(store,cid,selected,settings,quota,principal,*,authorized_batch=
         receipt.update(schema_version=CANDIDATE_SCHEMA_VERSION,prompt_version=CANDIDATE_PROMPT_VERSION,
                        prompt_sha256=hashlib.sha256(CANDIDATE_PROMPT.encode()).hexdigest(),
                        candidate_version=CANDIDATE_VERSION,candidate_catalog_sha256=catalog['sha256'])
+    if _pending_protocol:
+        receipt.update(schema_version=v12.SCHEMA_VERSION,prompt_version=v12.PROMPT_VERSION,
+                       prompt_sha256=hashlib.sha256(v12.PROMPT.encode()).hexdigest(),
+                       pending_catalog_version=v12.CATALOG_VERSION,pending_catalog_sha256=batch['pending_catalog']['sha256'])
     try:
         response=invoke(settings.api_key,request,settings.total_timeout,client_factory,provider=settings.provider)
         for key in ('call_status','provider_status','provider_model','provider_response_id','token_usage','http_status'):receipt[key]=response.get(key)
@@ -367,19 +375,20 @@ def analyze_case(store,cid,selected,settings,quota,principal,*,authorized_batch=
         if response.get('error_code'):receipt['error_code']=response['error_code']
         if response.get('error_code'):raise MultiAIError('模型服务未成功返回；不自动重试。',diagnostic=diagnostic('call','provider_call_failed',{},batch))
         if response.get('provider_status')!='completed' or response.get('refused'):raise MultiAIError('模型拒绝或输出不完整。',diagnostic=diagnostic('call','refused_or_incomplete',{},batch))
-        try:parsed=(CandidateAnalysis if _candidate_protocol else MultiAnalysis).model_validate_json(response.get('output_text',''))
+        try:parsed=(v12.Analysis12 if _pending_protocol else CandidateAnalysis if _candidate_protocol else MultiAnalysis).model_validate_json(response.get('output_text',''))
         except ValidationError as exc:
             raise MultiAIError(diagnostic=schema_diagnostic(exc,{'stage':'format'},batch,response.get('output_text',''))) from None
         receipt['format_status']='passed'
         # 再检查当前档案，防止请求期间快照或选择发生变化。
-        current=prepare_case(store,cid,selected,settings)
+        current=prepare(store,cid,selected,settings)
         if current['batch_sha256']!=batch['batch_sha256']:raise MultiAIError('档案发生变化，结果拒绝。',diagnostic=diagnostic('batch','batch_changed_during_call',{},batch))
         if _candidate_protocol and build_event_catalog(current)['sha256']!=receipt['candidate_catalog_sha256']:
             raise MultiAIError(diagnostic=diagnostic('batch','candidate_catalog_changed',{},current))
         receipt['evidence_status']='checking'
-        result=(validate_candidate_output if _candidate_protocol else validate_case_output)(store,cid,current,parsed)
+        result=(v12.validate_output if _pending_protocol else validate_candidate_output if _candidate_protocol else validate_case_output)(store,cid,current,parsed)
         if _candidate_protocol:
             receipt['candidate_selection_ids']=[selection.candidate_id for selection in parsed.timeline]
+        if _pending_protocol:receipt.update(v12.receipt_fields(current,parsed))
         receipt['evidence_status']='passed';result['receipt']=receipt
         return result
     except SemanticPolicyError as exc:
@@ -402,7 +411,7 @@ def analyze_case(store,cid,selected,settings,quota,principal,*,authorized_batch=
         receipt['duration_ms']=round((time.monotonic()-started)*1000);quota.release(lease)
 
 def analyze_case_candidates(store,cid,selected,settings,quota,principal,**kwargs):
-    """网页新请求唯一入口；1.1不接受1.0自由时间线，不降级、不重试。"""
+    """1.1历史兼容入口；不接受1.0自由时间线，不降级、不重试。"""
     return analyze_case(store,cid,selected,settings,quota,principal,_candidate_protocol=True,**kwargs)
 
 
@@ -413,24 +422,37 @@ def import_case_analysis(store,cid,result):
     from security import Settings
     receipt=result.get('receipt',{})
     settings=Settings(provider=receipt.get('provider','openai'),model=receipt.get('requested_model',''))
-    selected=result['selected_documents'];batch=prepare_case(store,cid,selected,settings)
-    if receipt.get('schema_version')==CANDIDATE_SCHEMA_VERSION and 'candidate_selection' not in result:
-        raise MultiAIError('候选选择审计缺失，未导入。')
-    if 'candidate_selection' in result:
-        audit=result['candidate_selection']
-        canonical=validate_candidate_output(store,cid,batch,audit['raw_output'])
-        if audit!=canonical['candidate_selection']:raise MultiAIError('候选清单或选择记录不匹配，未导入。')
+    selected=result['selected_documents']
+    is12=receipt.get('schema_version')=='multidoc-analysis/1.2' or result.get('schema_version')=='multidoc-analysis/1.2'
+    if is12:
+        import multidoc_v12 as v12
+        batch=v12.prepare_case(store,cid,selected,settings)
+        canonical=v12.validate_output(store,cid,batch,result['raw_output'])
+        v12.validate_receipt_result(receipt,batch,canonical)
+        for previous in store.get_case(cid).analysis_receipts:
+            if previous.get('run_id')==receipt.get('run_id') and previous.get('analysis_output_sha256')!=receipt.get('analysis_output_sha256'):
+                raise MultiAIError(diagnostic=diagnostic('import','run_id_conflict',{},batch))
     else:
-        canonical=validate_case_output(store,cid,batch,result['raw_output'])
+        batch=prepare_case(store,cid,selected,settings)
+        if receipt.get('schema_version')==CANDIDATE_SCHEMA_VERSION and 'candidate_selection' not in result:
+            raise MultiAIError('候选选择审计缺失，未导入。')
+        if 'candidate_selection' in result:
+            audit=result['candidate_selection']
+            canonical=validate_candidate_output(store,cid,batch,audit['raw_output'])
+            if audit!=canonical['candidate_selection']:raise MultiAIError('候选清单或选择记录不匹配，未导入。')
+        else:
+            canonical=validate_case_output(store,cid,batch,result['raw_output'])
     if any(result.get(key)!=value for key,value in canonical.items()):raise MultiAIError('结果被修改或已过期，未导入。')
     staged=CaseStore();staged._cases[cid]=store._case(cid).model_copy(deep=True)
     case=staged._case(cid)
     for did,value in canonical['per_document'].items():staged.import_analysis(cid,did,value)
     def anchor(span):
         return staged.add_evidence(cid,span['document_id'],span['unit_index'],span['start'],span['end'],span['quote'])
+    pending_statement_ids=[]
     for row in canonical['pending_evidence']:
         ids=[anchor(ref) for ref in row['sources']]
         sid=staged._append_statement(case,row['reasoning'],'ai_inference',ids,origin='ai',analysis_mode='AI多文档候选（待人工核验）')
+        pending_statement_ids.append(sid)
         key='review_'+sid
         if not any(p.pending_id==key for p in case.pending_items):
             case.pending_items.append(PendingItem(pending_id=key,kind='ai_inference_review',text=row['reasoning'],
@@ -461,8 +483,10 @@ def import_case_analysis(store,cid,result):
     allowed=('run_id','case_id','execution_mode','provider','base_url','requested_model','provider_model','provider_response_id',
              'sdk_version','protocol','schema_version','prompt_version','prompt_sha256','batch_sha256','document_snapshots',
              'input_budget','started_at','call_status','provider_status','format_status','evidence_status','semantic_status',
-             'token_usage','billing','duration_ms','candidate_version','candidate_catalog_sha256','candidate_selection_ids')
+             'token_usage','billing','duration_ms','candidate_version','candidate_catalog_sha256','candidate_selection_ids',
+             'pending_catalog_version','pending_catalog_sha256','pending_selection_ids','analysis_output_sha256')
     safe_receipt={key:deepcopy(receipt[key]) for key in allowed if key in receipt}
+    if is12:safe_receipt['pending_statement_ids']=pending_statement_ids
     if safe_receipt and not any(r.get('run_id')==safe_receipt.get('run_id') for r in case.analysis_receipts):
         case.analysis_receipts.append(safe_receipt)
     case.schema_version='1.2'

@@ -13,6 +13,8 @@ class JointUI(IsolatedUITestCase):
   store=CaseStore();cid=store.create_case('模拟联合UI');ids=[]
   for i in range(3):ids.append(store.attach_document(cid,f'模拟UI{i}.docx',document(f'模拟记录{i}：车辆发生碰撞。',title=str(i))))
   app=AppTest.from_string("import streamlit as st\nfrom multidoc_ui import render_multidoc_ai\nrender_multidoc_ai(st.session_state['store'],st.session_state['cid'],st.session_state['settings'],st.session_state['principal'])",default_timeout=30)
+  # 此夹具显式保留1.1历史入口；1.2默认入口由独立V2E AppTest覆盖。
+  app.session_state['md_protocol']='1.1'
   app.session_state['store']=store;app.session_state['cid']=cid
   settings=Settings(api_key='offline-not-real',password_hash=HASH,mode='local',single_instance=True)
   app.session_state['settings']=settings;app.session_state['principal']=settings.principal
@@ -50,6 +52,8 @@ class JointUI(IsolatedUITestCase):
    store.add_evidence(cid,did,0,0,len(text),text)
   store.discover_relations(cid)
   app=AppTest.from_string("import streamlit as st\nfrom relation_ui import render_relations\nrender_relations(st.session_state['store'],st.session_state['cid'])",default_timeout=30)
+  # 此夹具显式保留1.1历史入口；1.2默认入口由独立V2E AppTest覆盖。
+  app.session_state['md_protocol']='1.1'
   app.session_state['store']=store;app.session_state['cid']=cid;app.run()
   app.text_input(key='relation_reviewer').set_value('模拟人员');app.text_area(key='relation_reason').set_value('前一个候选的理由');app.selectbox(key='relation_status').set_value('confirmed');app.run()
   ids=[r.relation_id for r in store.get_case(cid).relations]

@@ -1,3 +1,21 @@
+# AutoLEX V2.0-E：1.2证据编号选择生产集成
+
+基线`a9bfe12c58e289b11c7bab3b12897896ee8fc66a`，独立worktree分支`feature/v2e-pending-selection-integration`。基线642项完整通过，53.426秒。
+
+先新增20项旧代码缺少1.2模块而失败的规格测试，再实施。最终新增44项（40项完整B01/SDK/安全/预算/ZIP测试，4项AppTest），完整`python -m unittest discover -s tests -v`：**686项全部通过，58.789秒**，原642项的检查意图保留。原测试只调整`tests/test_multidoc_ui.py`夹具，显式选择1.1历史入口，全部旧断言不删；新版默认1.2由新增AppTest实际覆盖。运行使用既有PYTHONPATH依赖目录。
+
+完整四文档B01 D01/D02/D03/D04，在一次请求中保留facts/timeline/relations/pending_evidence。PE目录确定性恢复text及全部选中来源，再走旧校验。覆盖此前三类失败反例、标题术语支持、非法/跨案编号、篡改目录/回执/恢复内容、主体误归属仍待人工审查、重复问题、额度不足、未授权/未确认覆盖、预算超限、长行碎片及目录上限、调用中档案变化、ZIP含/不含分析附件的审计恢复、同run_id内容冲突、重新计算清单后的恶意ZIP拒绝原子性、既有人工推断来源保留和明确导入。
+
+官方SDK+本地HTTP Mock覆盖OpenAI与DeepSeek的Responses请求/动态Schema/响应校验和零重试；不是实际模型效果。SDK Mock实际序列化字节：DeepSeek 93379、OpenAI 93399，含余量预算94403/94423，低于128000。输入字符2015，输出上限6000；真实输入/输出Token未测，JSON报告为null。原始材料、Gold及原数据预算未改。
+
+新1.2批次指纹与旧1.0/1.1独立，历史校验、案件结构和ZIP格式保持；回执只含安全ID/哈希，问题和恢复引文存案件记录，分析附件保留完整选择审计。未知或不合格输出整批拒绝，不自动补选、删项、改写、重试或确认事实。
+
+本轮真实模型调用0次，不读改Secrets，不接触现有额度数据库；额度测试只用临时SQLite。不部署、不合并、不修改main或旧验收分支。引用绑定通过不证明法律语义正确，真实DeepSeek兼容性、输出完整性和网页人工语义验收仍未完成。
+
+详见[技术与兼容说明/人工验收流程](docs/V2E_INTEGRATION.md)、[预算](docs/V2E_B01_BUDGET.json)、[完整日志](docs/v2e_offline_tests.txt)。
+
+以下保留历史报告。
+
 # CASE-001待核实事项编号选择：独立离线原型
 
 分支`feature/b01-pending-evidence-selection-prototype`，基线`6998b6f968ee839a17a3df4d978dc3891e99080c`，独立worktree开发，基线工作区干净。
