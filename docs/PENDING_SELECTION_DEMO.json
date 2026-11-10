@@ -1,0 +1,411 @@
+{
+  "declaration": "完全虚构，仅用于软件测试；人工编号选择，不是真实模型输出或验收通过",
+  "execution_mode": "offline_prototype_no_model",
+  "real_model_calls": 0,
+  "automatic_retries": 0,
+  "authorization_status": "not_requested_offline_only",
+  "production_import_allowed": false,
+  "budget": {
+    "input_chars": 1511,
+    "prototype_envelope_bytes": 47901
+  },
+  "catalog_entries": 47,
+  "catalog_excluded": [],
+  "required_acknowledgements": [
+    "8f6460d477d7015e2eabd60779d663362b81e9d34c4459521d83f82929e7bb86",
+    "b1eb5114fa545f56b58837b5a0c28f2d68225c8114a957f4f2582524fdff6161",
+    "caac3f3a7a6cb89b7ca50cc202acf017d22dab01227377c6b5b5cd06e1ec9c97"
+  ],
+  "examples": [
+    {
+      "id": "d01_d04_multisource",
+      "selection_origin": "human_authored_offline_fixture",
+      "raw_selection": {
+        "schema_version": "pending-evidence-selection/1.0-prototype",
+        "prompt_version": "pending-selection/offline-v1",
+        "case_id": "case_8edca3c836ff16e65f475a220cbd0228",
+        "batch_sha256": "cbeac9cd65eb34f7becb62b09d9711bda633c520de87def217890bfb1e7a7c7c",
+        "catalog_sha256": "597908f0f9768ac1cd34f29c124efe172b3fe1ab05c2d0f136eca3c7b5facdcd",
+        "pending_evidence": [
+          {
+            "anchor_id": "PE_1e96d1f258f6e442d3919829",
+            "evidence_ids": [
+              "PE_1e96d1f258f6e442d3919829",
+              "PE_9491187acc8590839e48e295"
+            ],
+            "reasoning": "待核实推断：D01口述分钟与D04的EDR相对锚点是否有可核对的基准？"
+          }
+        ]
+      },
+      "result": {
+        "schema_version": "pending-evidence-selection/1.0-prototype",
+        "execution_mode": "offline_prototype_no_model",
+        "case_id": "case_8edca3c836ff16e65f475a220cbd0228",
+        "production_import_allowed": false,
+        "validation": {
+          "format_status": "passed",
+          "evidence_status": "passed",
+          "semantic_status": "pending_human_review",
+          "provider_status": "not_called"
+        },
+        "resolved_pending_evidence": [
+          {
+            "kind": "推断",
+            "text": "事故时间栏目08:30来自P01口述，仅按分钟填写，未作时钟校核。\n",
+            "reasoning": "待核实推断：D01口述分钟与D04的EDR相对锚点是否有可核对的基准？",
+            "sources": [
+              {
+                "evidence_id": "evidence_d47247d63fb05a77fddbf07e",
+                "case_id": "case_8edca3c836ff16e65f475a220cbd0228",
+                "document_id": "8f6460d477d7015e2eabd60779d663362b81e9d34c4459521d83f82929e7bb86",
+                "document_sha256": "93cc905cda09d0411d73c55d342af392df3dd4a86e2f4ac57d5f3c683c85760e",
+                "parsed_text_sha256": "62cb4917b190bf6641c0b5a558c65bce985a1a99f26b61faaf080649702cb212",
+                "parser_version": "core.read_units/v2-coverage",
+                "unit_index": 0,
+                "location": "PDF 第 1 页",
+                "start": 315,
+                "end": 349,
+                "quote": "事故时间栏目08:30来自P01口述，仅按分钟填写，未作时钟校核。\n",
+                "source_id": "MD_aae5a500ac9c944d58e8e5cb"
+              },
+              {
+                "evidence_id": "evidence_8bdfc4f9f74ab66173dd727d",
+                "case_id": "case_8edca3c836ff16e65f475a220cbd0228",
+                "document_id": "caac3f3a7a6cb89b7ca50cc202acf017d22dab01227377c6b5b5cd06e1ec9c97",
+                "document_sha256": "9cbfdb75879d0e4c086b341fdbf62a955cd7bbfef2dc3e7c797e4ccc5de92a03",
+                "parsed_text_sha256": "cad29b32120272c76704d48c89fb623597daf4523db42ac1b5b3f1fef72d4ff7",
+                "parser_version": "core.read_units/v2-coverage",
+                "unit_index": 0,
+                "location": "PDF 第 1 页",
+                "start": 224,
+                "end": 256,
+                "quote": "EDR只提供相对触发锚点t=0的测试摘要，未提供可信绝对日期。\n",
+                "source_id": "MD_edeb7f27033c1437e932de33"
+              }
+            ],
+            "verification": "待人工核验"
+          }
+        ],
+        "selection_audit": {
+          "raw_selection": {
+            "schema_version": "pending-evidence-selection/1.0-prototype",
+            "prompt_version": "pending-selection/offline-v1",
+            "case_id": "case_8edca3c836ff16e65f475a220cbd0228",
+            "batch_sha256": "cbeac9cd65eb34f7becb62b09d9711bda633c520de87def217890bfb1e7a7c7c",
+            "catalog_sha256": "597908f0f9768ac1cd34f29c124efe172b3fe1ab05c2d0f136eca3c7b5facdcd",
+            "pending_evidence": [
+              {
+                "anchor_id": "PE_1e96d1f258f6e442d3919829",
+                "evidence_ids": [
+                  "PE_1e96d1f258f6e442d3919829",
+                  "PE_9491187acc8590839e48e295"
+                ],
+                "reasoning": "待核实推断：D01口述分钟与D04的EDR相对锚点是否有可核对的基准？"
+              }
+            ]
+          },
+          "catalog_sha256": "597908f0f9768ac1cd34f29c124efe172b3fe1ab05c2d0f136eca3c7b5facdcd",
+          "prompt_sha256": "a718748f9df283b2556df040fb82311b3b8926ee3eb6e9cc07cfb3ddeaa708cd",
+          "restored_sha256": "9e7a6f8f5a2beee6822b90e4c1dfc4c7c1e9f10ad769d2b44cee908911deade3"
+        },
+        "limitations": [
+          "selection_not_entailment",
+          "title_not_capability_proof",
+          "subject_and_document_attribution_require_human_review"
+        ]
+      }
+    },
+    {
+      "id": "d04_explicit_title",
+      "selection_origin": "human_authored_offline_fixture",
+      "raw_selection": {
+        "schema_version": "pending-evidence-selection/1.0-prototype",
+        "prompt_version": "pending-selection/offline-v1",
+        "case_id": "case_8edca3c836ff16e65f475a220cbd0228",
+        "batch_sha256": "cbeac9cd65eb34f7becb62b09d9711bda633c520de87def217890bfb1e7a7c7c",
+        "catalog_sha256": "597908f0f9768ac1cd34f29c124efe172b3fe1ab05c2d0f136eca3c7b5facdcd",
+        "pending_evidence": [
+          {
+            "anchor_id": "PE_97f2c26085faaf8602ec034b",
+            "evidence_ids": [
+              "PE_97f2c26085faaf8602ec034b",
+              "PE_758a8da354a9ddcd130e0fa4"
+            ],
+            "reasoning": "待核实推断：D04的EDR摘要原始数据是否需要核查？"
+          }
+        ]
+      },
+      "result": {
+        "schema_version": "pending-evidence-selection/1.0-prototype",
+        "execution_mode": "offline_prototype_no_model",
+        "case_id": "case_8edca3c836ff16e65f475a220cbd0228",
+        "production_import_allowed": false,
+        "validation": {
+          "format_status": "passed",
+          "evidence_status": "passed",
+          "semantic_status": "pending_human_review",
+          "provider_status": "not_called"
+        },
+        "resolved_pending_evidence": [
+          {
+            "kind": "推断",
+            "text": "原始二进制数据及提取过程镜像未提供，摘要为二次转写。\n",
+            "reasoning": "待核实推断：D04的EDR摘要原始数据是否需要核查？",
+            "sources": [
+              {
+                "evidence_id": "evidence_45af41d4023b45cce8806898",
+                "case_id": "case_8edca3c836ff16e65f475a220cbd0228",
+                "document_id": "caac3f3a7a6cb89b7ca50cc202acf017d22dab01227377c6b5b5cd06e1ec9c97",
+                "document_sha256": "9cbfdb75879d0e4c086b341fdbf62a955cd7bbfef2dc3e7c797e4ccc5de92a03",
+                "parsed_text_sha256": "cad29b32120272c76704d48c89fb623597daf4523db42ac1b5b3f1fef72d4ff7",
+                "parser_version": "core.read_units/v2-coverage",
+                "unit_index": 0,
+                "location": "PDF 第 1 页",
+                "start": 498,
+                "end": 525,
+                "quote": "原始二进制数据及提取过程镜像未提供，摘要为二次转写。\n",
+                "source_id": "MD_00eeb764ccb8a5879fb48cd4"
+              },
+              {
+                "evidence_id": "evidence_3beb5aadec1059e3501fe3f4",
+                "case_id": "case_8edca3c836ff16e65f475a220cbd0228",
+                "document_id": "caac3f3a7a6cb89b7ca50cc202acf017d22dab01227377c6b5b5cd06e1ec9c97",
+                "document_sha256": "9cbfdb75879d0e4c086b341fdbf62a955cd7bbfef2dc3e7c797e4ccc5de92a03",
+                "parsed_text_sha256": "cad29b32120272c76704d48c89fb623597daf4523db42ac1b5b3f1fef72d4ff7",
+                "parser_version": "core.read_units/v2-coverage",
+                "unit_index": 0,
+                "location": "PDF 第 1 页",
+                "start": 89,
+                "end": 100,
+                "quote": "模拟材料：EDR摘要\n",
+                "source_id": "MD_82e4733f45e45b7c28c9fcf1"
+              }
+            ],
+            "verification": "待人工核验"
+          }
+        ],
+        "selection_audit": {
+          "raw_selection": {
+            "schema_version": "pending-evidence-selection/1.0-prototype",
+            "prompt_version": "pending-selection/offline-v1",
+            "case_id": "case_8edca3c836ff16e65f475a220cbd0228",
+            "batch_sha256": "cbeac9cd65eb34f7becb62b09d9711bda633c520de87def217890bfb1e7a7c7c",
+            "catalog_sha256": "597908f0f9768ac1cd34f29c124efe172b3fe1ab05c2d0f136eca3c7b5facdcd",
+            "pending_evidence": [
+              {
+                "anchor_id": "PE_97f2c26085faaf8602ec034b",
+                "evidence_ids": [
+                  "PE_97f2c26085faaf8602ec034b",
+                  "PE_758a8da354a9ddcd130e0fa4"
+                ],
+                "reasoning": "待核实推断：D04的EDR摘要原始数据是否需要核查？"
+              }
+            ]
+          },
+          "catalog_sha256": "597908f0f9768ac1cd34f29c124efe172b3fe1ab05c2d0f136eca3c7b5facdcd",
+          "prompt_sha256": "a718748f9df283b2556df040fb82311b3b8926ee3eb6e9cc07cfb3ddeaa708cd",
+          "restored_sha256": "624816395306ccfbb7558ea09913fef3dd1420f3ea5a5d4af3837bf2fae9fc2a"
+        },
+        "limitations": [
+          "selection_not_entailment",
+          "title_not_capability_proof",
+          "subject_and_document_attribution_require_human_review"
+        ]
+      }
+    },
+    {
+      "id": "d01_d03_multisource",
+      "selection_origin": "human_authored_offline_fixture",
+      "raw_selection": {
+        "schema_version": "pending-evidence-selection/1.0-prototype",
+        "prompt_version": "pending-selection/offline-v1",
+        "case_id": "case_8edca3c836ff16e65f475a220cbd0228",
+        "batch_sha256": "cbeac9cd65eb34f7becb62b09d9711bda633c520de87def217890bfb1e7a7c7c",
+        "catalog_sha256": "597908f0f9768ac1cd34f29c124efe172b3fe1ab05c2d0f136eca3c7b5facdcd",
+        "pending_evidence": [
+          {
+            "anchor_id": "PE_1e96d1f258f6e442d3919829",
+            "evidence_ids": [
+              "PE_1e96d1f258f6e442d3919829",
+              "PE_315e9da78f8b1ef192e2500c"
+            ],
+            "reasoning": "待核实推断：D01时间来源与D03的原始日志材料是否需要分别核查？"
+          }
+        ]
+      },
+      "result": {
+        "schema_version": "pending-evidence-selection/1.0-prototype",
+        "execution_mode": "offline_prototype_no_model",
+        "case_id": "case_8edca3c836ff16e65f475a220cbd0228",
+        "production_import_allowed": false,
+        "validation": {
+          "format_status": "passed",
+          "evidence_status": "passed",
+          "semantic_status": "pending_human_review",
+          "provider_status": "not_called"
+        },
+        "resolved_pending_evidence": [
+          {
+            "kind": "推断",
+            "text": "事故时间栏目08:30来自P01口述，仅按分钟填写，未作时钟校核。\n",
+            "reasoning": "待核实推断：D01时间来源与D03的原始日志材料是否需要分别核查？",
+            "sources": [
+              {
+                "evidence_id": "evidence_d47247d63fb05a77fddbf07e",
+                "case_id": "case_8edca3c836ff16e65f475a220cbd0228",
+                "document_id": "8f6460d477d7015e2eabd60779d663362b81e9d34c4459521d83f82929e7bb86",
+                "document_sha256": "93cc905cda09d0411d73c55d342af392df3dd4a86e2f4ac57d5f3c683c85760e",
+                "parsed_text_sha256": "62cb4917b190bf6641c0b5a558c65bce985a1a99f26b61faaf080649702cb212",
+                "parser_version": "core.read_units/v2-coverage",
+                "unit_index": 0,
+                "location": "PDF 第 1 页",
+                "start": 315,
+                "end": 349,
+                "quote": "事故时间栏目08:30来自P01口述，仅按分钟填写，未作时钟校核。\n",
+                "source_id": "MD_aae5a500ac9c944d58e8e5cb"
+              },
+              {
+                "evidence_id": "evidence_780a03f364ad6e86badbb5d9",
+                "case_id": "case_8edca3c836ff16e65f475a220cbd0228",
+                "document_id": "b1eb5114fa545f56b58837b5a0c28f2d68225c8114a957f4f2582524fdff6161",
+                "document_sha256": "7e73c587e1334a65698826c9bf3132f589a3ed57aa0ed2eab16cebec56735af6",
+                "parsed_text_sha256": "72de1d69628ac420d5a6c51d1e2066ad7807c928b54c7b033c5a23898d2a7bec",
+                "parser_version": "core.read_units/v2-coverage",
+                "unit_index": 0,
+                "location": "PDF 第 1 页",
+                "start": 377,
+                "end": 404,
+                "quote": "原始二进制日志、设备镜像和完整性签名未随本说明提供。\n",
+                "source_id": "MD_0da506adde95c48cb9d945fa"
+              }
+            ],
+            "verification": "待人工核验"
+          }
+        ],
+        "selection_audit": {
+          "raw_selection": {
+            "schema_version": "pending-evidence-selection/1.0-prototype",
+            "prompt_version": "pending-selection/offline-v1",
+            "case_id": "case_8edca3c836ff16e65f475a220cbd0228",
+            "batch_sha256": "cbeac9cd65eb34f7becb62b09d9711bda633c520de87def217890bfb1e7a7c7c",
+            "catalog_sha256": "597908f0f9768ac1cd34f29c124efe172b3fe1ab05c2d0f136eca3c7b5facdcd",
+            "pending_evidence": [
+              {
+                "anchor_id": "PE_1e96d1f258f6e442d3919829",
+                "evidence_ids": [
+                  "PE_1e96d1f258f6e442d3919829",
+                  "PE_315e9da78f8b1ef192e2500c"
+                ],
+                "reasoning": "待核实推断：D01时间来源与D03的原始日志材料是否需要分别核查？"
+              }
+            ]
+          },
+          "catalog_sha256": "597908f0f9768ac1cd34f29c124efe172b3fe1ab05c2d0f136eca3c7b5facdcd",
+          "prompt_sha256": "a718748f9df283b2556df040fb82311b3b8926ee3eb6e9cc07cfb3ddeaa708cd",
+          "restored_sha256": "25577477bc461e4f51684c4724cf1bdb29d50681bbdb61af9a50ea4935caef3f"
+        },
+        "limitations": [
+          "selection_not_entailment",
+          "title_not_capability_proof",
+          "subject_and_document_attribution_require_human_review"
+        ]
+      }
+    }
+  ],
+  "expected_rejections": [
+    {
+      "id": "d04_missing_explicit_term_source",
+      "code": "evidence_validation_failed",
+      "diagnostic": {
+        "version": "multidoc-diagnostic/v1",
+        "stage": "inference",
+        "rule": "unsupported_data_term",
+        "section": "pending_evidence",
+        "item_index": 0,
+        "item_index_base": 0,
+        "source_ids": [
+          "MD_00eeb764ccb8a5879fb48cd4"
+        ],
+        "trigger_source_id": null,
+        "document_ids": [
+          "caac3f3a7a6cb89b7ca50cc202acf017d22dab01227377c6b5b5cd06e1ec9c97"
+        ],
+        "unsupported_terms": [
+          "EDR"
+        ],
+        "term_support_scope": "explicit_quotes_only"
+      }
+    },
+    {
+      "id": "unknown_candidate",
+      "code": "candidate_not_in_catalog",
+      "diagnostic": null
+    }
+  ],
+  "semantic_counterexample": {
+    "id": "wrong_subject_attribution",
+    "human_expected_assessment": "企业主张被误称驾驶人自述，需人工纠正，词面绑定不会自动检出",
+    "result": {
+      "schema_version": "pending-evidence-selection/1.0-prototype",
+      "execution_mode": "offline_prototype_no_model",
+      "case_id": "case_8edca3c836ff16e65f475a220cbd0228",
+      "production_import_allowed": false,
+      "validation": {
+        "format_status": "passed",
+        "evidence_status": "passed",
+        "semantic_status": "pending_human_review",
+        "provider_status": "not_called"
+      },
+      "resolved_pending_evidence": [
+        {
+          "kind": "推断",
+          "text": "企业主张：驾驶人已收到接管提示。\n",
+          "reasoning": "待核实推断：驾驶人已收到提示的自述是否需要核查？",
+          "sources": [
+            {
+              "evidence_id": "evidence_b1819d1af9f466702862575d",
+              "case_id": "case_8edca3c836ff16e65f475a220cbd0228",
+              "document_id": "b1eb5114fa545f56b58837b5a0c28f2d68225c8114a957f4f2582524fdff6161",
+              "document_sha256": "7e73c587e1334a65698826c9bf3132f589a3ed57aa0ed2eab16cebec56735af6",
+              "parsed_text_sha256": "72de1d69628ac420d5a6c51d1e2066ad7807c928b54c7b033c5a23898d2a7bec",
+              "parser_version": "core.read_units/v2-coverage",
+              "unit_index": 0,
+              "location": "PDF 第 1 页",
+              "start": 278,
+              "end": 295,
+              "quote": "企业主张：驾驶人已收到接管提示。\n",
+              "source_id": "MD_caa6b782b4e90ee9492509a0"
+            }
+          ],
+          "verification": "待人工核验"
+        }
+      ],
+      "selection_audit": {
+        "raw_selection": {
+          "schema_version": "pending-evidence-selection/1.0-prototype",
+          "prompt_version": "pending-selection/offline-v1",
+          "case_id": "case_8edca3c836ff16e65f475a220cbd0228",
+          "batch_sha256": "cbeac9cd65eb34f7becb62b09d9711bda633c520de87def217890bfb1e7a7c7c",
+          "catalog_sha256": "597908f0f9768ac1cd34f29c124efe172b3fe1ab05c2d0f136eca3c7b5facdcd",
+          "pending_evidence": [
+            {
+              "anchor_id": "PE_b4cedf5714931d0ebb12d713",
+              "evidence_ids": [
+                "PE_b4cedf5714931d0ebb12d713"
+              ],
+              "reasoning": "待核实推断：驾驶人已收到提示的自述是否需要核查？"
+            }
+          ]
+        },
+        "catalog_sha256": "597908f0f9768ac1cd34f29c124efe172b3fe1ab05c2d0f136eca3c7b5facdcd",
+        "prompt_sha256": "a718748f9df283b2556df040fb82311b3b8926ee3eb6e9cc07cfb3ddeaa708cd",
+        "restored_sha256": "a74e4096b48c457b2685dbb6fb62c91d0b2196959e6855f223cba4eb4f9e0559"
+      },
+      "limitations": [
+        "selection_not_entailment",
+        "title_not_capability_proof",
+        "subject_and_document_attribution_require_human_review"
+      ]
+    }
+  }
+}

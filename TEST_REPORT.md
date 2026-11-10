@@ -1,3 +1,17 @@
+# CASE-001待核实事项编号选择：独立离线原型
+
+分支`feature/b01-pending-evidence-selection-prototype`，基线`6998b6f968ee839a17a3df4d978dc3891e99080c`，独立worktree开发，基线工作区干净。
+
+基线591项通过，50.535秒。先新增44项缺模块失败测试，再实施原型并补充7项，总新增51项；最终完整`python -m unittest discover -s tests -v`：**642项全部通过，54.087秒**。原591项测试文件、断言与生产代码均未改。实际运行使用既有PYTHONPATH依赖目录。
+
+模型编号选择由人工夹具构造，不是DeepSeek响应。原型恢复全部明确选中来源、主引文及锚点，再走旧证据/术语/推断验证；未知编号、跨案/篡改、超限、漏主证据及任一失败整批拒绝，CaseStore不被修改。合法但错误主体/过度推断可通过字面绑定，专门测试标记此局限，语义仍待人工核验，原型禁止生产导入。
+
+47项来源候选、1511原文字符、47901字节离线包；不是实际SDK请求/Token或成本指标。8份原件、Gold、数据预算与生成脚本均保持字节一致。工作包旧兼容不改，原型不能混入已验证analysis附件。
+
+本轮真实模型调用0次，不读取Secrets或现有配额记录；原型不访问QuotaStore，完整回归的既有额度测试仅使用临时测试数据库。无自动重试/部署/合并。见[架构评估与结论](docs/PENDING_SELECTION_PROTOTYPE.md)、[完全虚构演示](docs/PENDING_SELECTION_DEMO.json)、[完整日志](docs/pending_selection_offline_tests.txt)。
+
+以下保留历史报告。
+
 # CASE-001 B01技术术语来源修复：最新离线测试
 
 分支`feature/b01-supported-data-term-fix`，基线`fcfa64d92e3277fd035461fd82c851dae264e525`，独立worktree开发。

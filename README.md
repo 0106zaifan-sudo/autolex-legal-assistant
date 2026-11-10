@@ -215,3 +215,5 @@ facts 中事实/主张的 reasoning 必须为必填空字符串，Prompt与JSON 
 CASE-001 B01待核实事项字段契约、离线回归及预算复核见[修复说明](docs/B01_PENDING_TEXT_FIX.md)。真实DeepSeek效果仍需另行人工授权验收。
 
 CASE-001 B01技术术语来源范围、显式标题引用及语义限制见[调查与最小修复](docs/B01_SUPPORTED_DATA_TERMS.md)。词面校验通过不等于技术推断成立。
+
+独立离线研究：待核实事项支持“人工/模型显式选择证据编号→程序恢复原文→原校验器重验”的[原型与架构评估](docs/PENDING_SELECTION_PROTOTYPE.md)。可运行`python tools/run_pending_selection_prototype.py --output /tmp/AutoLEX_pending_selection_demo.json`查看固定虚构演示；不调用模型、不读取Secrets、不导入案件，尚未接入网页或付费验收。
