@@ -49,14 +49,76 @@ def diagnostic(stage,rule,context,batch):
             'item_index':index if type(index) is int and index>=0 else None,'item_index_base':0,
             'source_ids':ids,'trigger_source_id':trigger,'document_ids':sorted({known[s]['document_id'] for s in ids if s in known})}
 
+# 只公开Schema已知字段名和数组序号；未知字段名也可能是模型原文，不能照抄loc。
+SCHEMA_ERROR_TYPES=frozenset(('json_invalid','json_type','missing','literal_error','extra_forbidden',
+ 'model_type','model_attributes_type','string_type','list_type','dict_type','int_type','float_type','bool_type',
+ 'none_required','string_pattern_mismatch','string_too_short','string_too_long','too_short','too_long',
+ 'greater_than','greater_than_equal','less_than','less_than_equal','value_error','assertion_error'))
+_SCHEMA_REF={'source_id':{},'quote':{}}
+_SCHEMA_ITEM={'kind':{},'text':{},'reasoning':{},'sources':{'[]':_SCHEMA_REF}}
+_SCHEMA_TIMELINE={**_SCHEMA_ITEM,'event_source':_SCHEMA_REF,'time_source':_SCHEMA_REF,
+ 'time_state':{},'time_precision':{},'time_text':{},'candidate_id':{}}
+_SCHEMA_PENDING={**_SCHEMA_ITEM,'anchor_id':{},'evidence_ids':{'[]':{}}}
+_SCHEMA_PATHS={k:{} for k in ('schema_version','prompt_version','parser_version','document_sha256',
+ 'parsed_text_sha256','case_id','batch_sha256','pending_catalog_sha256')}
+_SCHEMA_PATHS.update(facts={'[]':_SCHEMA_ITEM},timeline={'[]':_SCHEMA_TIMELINE},
+ pending_evidence={'[]':_SCHEMA_PENDING},issues={'[]':_SCHEMA_ITEM},
+ relations={'[]':{'left':_SCHEMA_REF,'right':_SCHEMA_REF,'relation_type':{},'reasoning':{}}})
+MAX_SCHEMA_ERRORS=20
+MAX_SCHEMA_PATH_DEPTH=8
+MAX_SCHEMA_INDEX=1000
+
+
+def _schema_path(loc):
+    node=_SCHEMA_PATHS;path=[];redacted=False
+    for component in loc:
+        if len(path)>=MAX_SCHEMA_PATH_DEPTH-1:
+            path.append('<redacted>');redacted=True;break
+        if type(component) is int and '[]' in node and 0<=component<=MAX_SCHEMA_INDEX:
+            path.append(component);node=node['[]']
+        elif isinstance(component,str) and component!='[]' and component in node:
+            path.append(component);node=node[component]
+        else:
+            path.append('<redacted>');redacted=True;break
+    return path,redacted
+
+
+def _schema_category(kind,path):
+    if kind=='json_invalid':return 'json_parse'
+    if kind=='missing':return 'missing_field'
+    if kind=='literal_error':return 'version_mismatch' if path in (['schema_version'],['prompt_version'],['parser_version']) else 'literal_value'
+    if kind=='extra_forbidden':return 'extra_field'
+    if kind in ('json_type','model_type','model_attributes_type','string_type','list_type','dict_type','int_type','float_type','bool_type','none_required'):return 'field_type'
+    if kind in ('string_pattern_mismatch','string_too_short','string_too_long','too_short','too_long','greater_than','greater_than_equal','less_than','less_than_equal'):return 'value_constraint'
+    return 'other_schema_error'
+
+
+def _schema_summary(problems,total):
+    counts={};details=[]
+    for problem in problems:
+        kind=problem.get('type')
+        kind=kind if kind in SCHEMA_ERROR_TYPES else 'other_validation_error'
+        counts[kind]=counts.get(kind,0)+1
+        if len(details)<MAX_SCHEMA_ERRORS:
+            path,redacted=_schema_path(problem.get('loc',()))
+            details.append({'type':kind,'category':_schema_category(kind,path),'path':path,'path_redacted':redacted})
+    return {'schema_error_version':'schema-errors/v1','schema_error_count':total,
+            'schema_errors':details,'schema_errors_truncated':total>len(details),
+            'schema_error_type_counts':counts}
+
+
 def schema_diagnostic(error,context,batch,raw=None):
     context=dict(context)
-    for problem in error.errors(include_input=False,include_context=False,include_url=False):
+    problems=error.errors(include_input=False,include_context=False,include_url=False)
+    for problem in problems:
         loc=problem.get('loc',())
         if loc and loc[0] in SECTIONS and context.get('section') is None:
             context['section']=loc[0]
             if len(loc)>1 and type(loc[1]) is int:context['item_index']=loc[1]
             break
+    index=context.get('item_index')
+    if type(index) is not int or not 0<=index<=MAX_SCHEMA_INDEX:
+        context['item_index']=None
     if not context.get('source_ids') and context.get('section') and type(context.get('item_index')) is int:
         try:
             payload=json.loads(raw) if isinstance(raw,str) else raw
@@ -64,4 +126,6 @@ def schema_diagnostic(error,context,batch,raw=None):
             refs=row.get('sources',[]) if context['section']!='relations' else [row.get('left',{}),row.get('right',{})]
             context['source_ids']=[r['source_id'] for r in refs if isinstance(r,dict) and isinstance(r.get('source_id'),str)]
         except (ValueError,KeyError,IndexError,TypeError,AttributeError):pass
-    return diagnostic('format' if context.get('stage')=='format' else 'document_format','schema_rejected',context,batch)
+    result=diagnostic('format' if context.get('stage')=='format' else 'document_format','schema_rejected',context,batch)
+    result.update(_schema_summary(problems,error.error_count()))
+    return result

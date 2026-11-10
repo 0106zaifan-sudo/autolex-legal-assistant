@@ -219,3 +219,5 @@ CASE-001 B01技术术语来源范围、显式标题引用及语义限制见[调�
 独立离线研究：待核实事项支持“人工/模型显式选择证据编号→程序恢复原文→原校验器重验”的[原型与架构评估](docs/PENDING_SELECTION_PROTOTYPE.md)。可运行`python tools/run_pending_selection_prototype.py --output /tmp/AutoLEX_pending_selection_demo.json`查看固定虚构演示；不调用模型、不读取Secrets、不导入案件，尚未接入网页或付费验收。
 
 V2.0-E已集成`multidoc-analysis/1.2`：联合分析默认选择1.2，保留1.1历史入口；待核实事项由模型明确选择PE编号，程序恢复原文并严格核验，四个分析模块仍为一次请求。预览不会自动导入，所有结果待人工核验；1.0/1.1历史及案件ZIP继续按版本校验。[技术、兼容及人工网页验收说明](docs/V2E_INTEGRATION.md)；[离线预算报告](docs/V2E_B01_BUDGET.json)。可运行`python tools/prepare_v2e_b01.py --output /tmp/AutoLEX_V2E_B01_budget.json`复核完整B01，工具只用本地HTTP Mock，无真实模型或Secrets访问。本轮686项离线测试通过，真实DeepSeek1.2验收仍待另行人工授权。
+
+V2.0-E格式失败新增安全Schema诊断：错误类型、白名单字段路径、总数及截断标记；不记录模型内容、不自动修复。详见[排查报告与诊断字段](docs/V2E_SCHEMA_DIAGNOSTICS.md)。本轮716项离线通过，不能据此认定首次真实格式失败已定位或解决。

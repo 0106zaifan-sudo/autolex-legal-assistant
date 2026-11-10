@@ -4,6 +4,7 @@ import io
 import zipfile
 
 SOURCE_FILES = (
+    'tests/test_v2e_schema_diagnostics.py', 'docs/V2E_SCHEMA_DIAGNOSTICS.md', 'docs/v2e_schema_diagnostic_tests.txt',
     'multidoc_v12.py',
     'pending_catalog.py',
     'tools/prepare_v2e_b01.py',

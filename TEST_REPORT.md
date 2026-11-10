@@ -1,3 +1,17 @@
+# V2.0-E首次B01格式失败：安全Schema诊断
+
+分支`feature/v2e-schema-diagnostics`，基线`f4717133631a9ad25074878540d174f39d9bd2be`，干净基线独立worktree。基线686项通过，57.179秒。
+
+先增加28项旧诊断无法满足的HTTP Mock/安全测试（26项缺字段错误、1项失败，1项既有分块行为通过），实施后补2项历史兼容；共新增30项。最终完整`python -m unittest discover -s tests -v`：**716项全部通过，60.120秒**，原686项测试文件与断言不改。依赖通过现有PYTHONPATH指定；openai 2.54.0、pydantic 2.14.3。
+
+覆盖JSON解析/空文本/围栏/根类型、缺字段、版本/字段类型/模式、额外字段、20条明细上限及完整60项统计、上下文路径白名单、未知键/类型/序号脱敏、多文本块拼接边界、旧1.0与文档解析版本。官方SDK全程本地MockTransport；失败仍一次请求、保留模拟Token、evidence=not_run、不写案件。没有实际服务商请求。
+
+生产只改schema_diagnostic及辅助过滤；未改Schema、Prompt、SDK提取、证据、门禁或ZIP。新增字段不含msg/input/ctx/url、字段值或异常原文。不能由旧section=null定位真实字段，人工反例不是此次真实响应。Mock130用量与用户报告42762/3848无同一性。
+
+本轮真实模型调用0次，不读改Secrets、原材料/Gold、现有额度记录，不部署、不自动重试、不合并main。详见[审查与限制](docs/V2E_SCHEMA_DIAGNOSTICS.md)、[完整日志](docs/v2e_schema_diagnostic_tests.txt)。
+
+以下保留历史报告。
+
 # AutoLEX V2.0-E：1.2证据编号选择生产集成
 
 基线`a9bfe12c58e289b11c7bab3b12897896ee8fc66a`，独立worktree分支`feature/v2e-pending-selection-integration`。基线642项完整通过，53.426秒。
