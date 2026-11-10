@@ -1,0 +1,111 @@
+{
+  "declaration": "完全虚构，仅用于离线机制调查。非第六次真实响应重现；没有生产协议改动。",
+  "baseline_commit": "b864800eda6c991c0e10b8cd6549c2cb93149258",
+  "real_model_calls": 0,
+  "http_mock_calls": 1,
+  "secrets_accessed": false,
+  "quota_database_accessed": false,
+  "actual_catalog_reconstruction": {
+    "performed": false,
+    "reason": "真实case_id、批次/目录SHA、实际文档快照上下文未提供；不使用假案件目录作成员判定",
+    "reported_ids": [
+      {
+        "candidate_id": "PE_1c2855f9e9e11f2b97762e19",
+        "well_formed_pe_24hex": true,
+        "actual_membership": "not_determined"
+      },
+      {
+        "candidate_id": "PE_8157e098231cf885924d2f61",
+        "well_formed_pe_24hex": true,
+        "actual_membership": "not_determined"
+      },
+      {
+        "candidate_id": "PE_79f4a8f3177d8404e67f5baa",
+        "well_formed_pe_24hex": true,
+        "actual_membership": "not_determined"
+      }
+    ]
+  },
+  "fictional_fixture": {
+    "case_id": "case_1ef5ed24596346cb39bb48dbd40e6dea",
+    "case_id_is_real_run": false,
+    "batch_sha256": "c37d50bb053e7b06624218cc12983ba74e2d21f1d123b846a4303ebb30fa73e0",
+    "pending_catalog_sha256": "206c0795e55eff46e16437671170df50fcc6444f186b80c3b20ddd0547575304",
+    "candidate_count": 62,
+    "source_count": 62,
+    "request_budget": {
+      "input_chars": 2015,
+      "request_bytes": 94137
+    }
+  },
+  "self_checks": [
+    {
+      "check": "same_case_snapshots_rebuild_identical_catalog",
+      "status": "passed"
+    },
+    {
+      "check": "same_originals_different_case_have_disjoint_pe_ids",
+      "status": "passed"
+    },
+    {
+      "check": "sdk_only_one_local_http_mock_request",
+      "status": "passed"
+    },
+    {
+      "check": "wire_catalog_anchor_enum_evidence_enum_equal",
+      "status": "passed"
+    },
+    {
+      "check": "catalog_mapping_matches_source_document_and_quote_hash",
+      "status": "passed"
+    },
+    {
+      "check": "deepseek_adaptation_keeps_enums_but_has_no_strict_flag",
+      "status": "passed"
+    },
+    {
+      "check": "static_pydantic_accepts_string_not_in_request_enum",
+      "status": "passed"
+    },
+    {
+      "check": "membership_rejects_unknown_without_writing_case",
+      "status": "passed"
+    },
+    {
+      "check": "diagnostic_lists_all_selected_ids_not_only_unknown",
+      "status": "passed"
+    }
+  ],
+  "artificial_mixed_selection": {
+    "label": "两条有效加一条无效的人工反例，不是用户三个编号的定位",
+    "selected_ids": [
+      "PE_77de6921c022e0a1d431e38c",
+      "PE_ffffffffffffffffffffffff",
+      "PE_2af0fd68e69493a82887c85f"
+    ],
+    "known_id_count": 2,
+    "unknown_id_count": 1,
+    "safe_diagnostic": {
+      "version": "multidoc-diagnostic/v1",
+      "stage": "pending_selection",
+      "rule": "pending_candidate_not_in_catalog",
+      "section": "pending_evidence",
+      "item_index": 0,
+      "item_index_base": 0,
+      "source_ids": [],
+      "trigger_source_id": null,
+      "document_ids": [],
+      "candidate_ids": [
+        "PE_77de6921c022e0a1d431e38c",
+        "PE_ffffffffffffffffffffffff",
+        "PE_2af0fd68e69493a82887c85f"
+      ]
+    }
+  },
+  "identifier_array_encoding_only": {
+    "entry_count": 62,
+    "pe_string_array_utf8_bytes": 1861,
+    "zero_based_integer_array_utf8_bytes": 177,
+    "scope": "单数组编码长度，不是完整请求预算、Token数量、模型准确率或费用比较"
+  }
+}
