@@ -2,6 +2,12 @@
 
 面向法学及司法鉴定研究生的 AI 法务实习演示项目。第二阶段基线：`feature/ai-case-facts`；P0证据绑定补丁：`feature/fix-evidence-binding`；本轮案件/解析覆盖分支：`feature/case-structure-parse-coverage`。原有 PDF/DOCX 解析、规则提取、检索与 Excel 导出保持离线；新增可选的 OpenAI 官方 SDK 案件事实分析，并支持OpenAI/DeepSeek官方Responses接口切换。AI 需要单独配置 Secrets、登录并确认发送资料，可能产生 API 费用。未配置密钥时禁用 AI，不用模拟结果冒充模型输出。
 
+## 1.4 短别名证据选择
+
+多文档入口默认 `multidoc-analysis/1.4`；模型选择批次内稀疏短别名，程序恢复原 PE 身份和完整原文，再执行原有校验。四模块仍一次调用，失败整批拒绝，成功须显式导入并人工核验。旧1.0—1.3历史路径及ZIP保留，不静默升级。
+
+本轮仅离线验证，真实模型调用0次。设计、兼容边界、B01预算和下一次人工验收步骤见 [1.4说明](docs/V14_SHORT_ALIASES.md)；精确预算见 [B01预算](docs/V14_B01_BUDGET.json)，测试见 [TEST_REPORT](TEST_REPORT.md)。短别名只能降低复制负担，选到合法却无关的来源仍需人工发现。
+
 ## 架构与文件
 
 ```text

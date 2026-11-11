@@ -1,3 +1,21 @@
+# 1.4：稀疏短别名证据选择生产集成
+
+独立 worktree 分支 `feature/v14-short-evidence-aliases`，基线 b864800eda6c991c0e10b8cd6549c2cb93149258。开始时基线干净，745项基线测试全部通过（62.859秒）。先写26项旧代码缺少1.4模块而失败的规格测试，再实现；最终新增42项（39核心/SDK/预算/ZIP，3 Streamlit AppTest）。
+
+最终执行 `PYTHONPATH=/workspace/work/phase2_deps:/workspace/work/python_deps python -m unittest discover -s tests -v`：**787项全部通过，67.985秒**。保留原745项断言，仅历史1.3界面夹具显式选1.3；新默认1.4由独立AppTest覆盖。此前中间完整回归784项也通过，之后补3项预算及术语测试并重新运行全套。
+
+专项验证：确定性别名及顺序稳定、单字符替换不落入合法集合、容量拒绝、动态Schema与本地上下文枚举一致、同批次未知/跨案/过期/快照变化/目录篡改拒绝、选中与未知编号诊断分开、主证据约束、重复问题与不同问题保留、合法但无关来源仍待人工审核、EDR标题支持与DSSAD无依据拒绝、四模块一次请求、未授权/未确认解析风险/预算/额度不足阻止调用、失败不导入、显式导入幂等及人工复核保护、混合协议拒绝、ZIP附件有无均恢复审计、重算清单的篡改ZIP原子拒绝。两服务商均通过官方SDK+本地HTTP MockTransport，零自动重试；AppTest覆盖新版入口、重新授权、错误显示、安全回执及禁止自动导入。
+
+`python tools/generate_case_001.py --check` 通过（8份虚构材料、14个标准版文件）。原件、Gold、ai_analysis.py、security.py、ai_providers.py、multidoc_v12.py、multidoc_v13.py 与基线无差异。历史协议验证与CaseBundle/ZIP版本不改；仅扩展新协议分派及安全回执字段。
+
+完整B01 D01—D04：62来源/62别名，DeepSeek预算76394字节、官方SDK本地序列化75370字节，OpenAI预算76414/实际75390，均低于128000；输出上限6000。真实Token未测为null，不以Mock用量估计费用。完整预算可重复生成并有断言。
+
+本轮真实AI调用0次，不读取/修改Secrets，不访问现有配额数据库，不部署、不合并。跨批次别名可能碰撞，依赖完整批次上下文；合法但无关来源和问题语义仍需人工审核。没有取得此前第六次真实回执与原工作包，未执行精确同一性复核，也未用夹具替代。
+
+详见[设计、兼容和下一次人工验收步骤](docs/V14_SHORT_ALIASES.md)、[B01预算](docs/V14_B01_BUDGET.json)、[完整离线日志](docs/v14_offline_tests.txt)。以上是离线验证，不代表真实DeepSeek输出可靠性或法律语义已验收。
+
+以下保留历史报告。
+
 # 1.3：程序拥有证据目录哈希
 
 分支`feature/v2e-program-owned-catalog-hash`，基线`0e65f9501c65d9384b812c56b75aac0b98b44613`，干净基线独立worktree。基线716项通过，64.023秒。

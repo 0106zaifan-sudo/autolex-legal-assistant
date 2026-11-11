@@ -25,7 +25,7 @@ MAX_DOCUMENTS=16
 MAX_RATIO=200
 HASH=re.compile(r'^[0-9a-f]{64}$')
 CASE_ID=re.compile(r'^case_[0-9a-f]{32}$')
-RECEIPT_KEYS=frozenset('run_id case_id execution_mode provider base_url requested_model provider_model provider_response_id sdk_version protocol schema_version prompt_version prompt_sha256 batch_sha256 document_snapshots input_budget started_at call_status provider_status format_status evidence_status semantic_status http_status token_usage billing duration_ms candidate_version candidate_catalog_sha256 candidate_selection_ids pending_catalog_version pending_catalog_sha256 pending_selection_ids pending_statement_ids analysis_output_sha256'.split())
+RECEIPT_KEYS=frozenset('run_id case_id execution_mode provider base_url requested_model provider_model provider_response_id sdk_version protocol schema_version prompt_version prompt_sha256 batch_sha256 document_snapshots input_budget started_at call_status provider_status format_status evidence_status semantic_status http_status token_usage billing duration_ms candidate_version candidate_catalog_sha256 candidate_selection_ids pending_catalog_version pending_catalog_sha256 pending_selection_ids pending_statement_ids analysis_output_sha256 pending_alias_version pending_alias_map_sha256 pending_alias_selection'.split())
 SECRET_KEYS=frozenset(('api_key','openai_api_key','deepseek_api_key','gh_token','github_token','password','password_hash','authorization','secrets','authorized_batch','principal','auth_state'))
 CREDENTIAL=re.compile(r'(?:sk-[A-Za-z0-9_-]{24,}|gh[pousr]_[A-Za-z0-9]{25,}|-----BEGIN (?:RSA |OPENSSH )?PRIVATE KEY)')
 
@@ -263,6 +263,8 @@ def validate_receipts(case,*,require_pending_statements=True):
     for receipt in case.analysis_receipts:
         require(set(receipt)<=RECEIPT_KEYS and receipt.get('case_id')==case.case_id,'receipt_fields_or_case')
         require(receipt.get('run_id') and receipt['run_id'] not in runs,'receipt_duplicate_run');runs.add(receipt['run_id'])
+        if receipt.get('schema_version')!='multidoc-analysis/1.4':
+            require(not any(k in receipt for k in ('pending_alias_version','pending_alias_map_sha256','pending_alias_selection')),'receipt_protocol_fields_mismatch')
         snapshots=receipt.get('document_snapshots',[])
         require(isinstance(snapshots,list) and 2<=len(snapshots)<=4 and len({s['document_id'] for s in snapshots})==len(snapshots),'receipt_document_scope')
         for snapshot in snapshots:
@@ -270,9 +272,11 @@ def validate_receipts(case,*,require_pending_statements=True):
             doc=case.documents.get(snapshot['document_id']);require(doc is not None,'receipt_document_reference')
             require(all(getattr(doc,k)==v for k,v in snapshot.items()),'receipt_snapshot_mismatch')
         require(receipt.get('provider') in ('openai','deepseek') and receipt.get('format_status')=='passed' and receipt.get('evidence_status')=='passed','receipt_validation_status')
-        require(receipt.get('schema_version') in ('multidoc-analysis/1.0','multidoc-analysis/1.1','multidoc-analysis/1.2','multidoc-analysis/1.3'),'receipt_schema_version')
-        if receipt['schema_version'] in ('multidoc-analysis/1.2','multidoc-analysis/1.3'):
-            if receipt['schema_version']=='multidoc-analysis/1.3':
+        require(receipt.get('schema_version') in ('multidoc-analysis/1.0','multidoc-analysis/1.1','multidoc-analysis/1.2','multidoc-analysis/1.3','multidoc-analysis/1.4'),'receipt_schema_version')
+        if receipt['schema_version'] in ('multidoc-analysis/1.2','multidoc-analysis/1.3','multidoc-analysis/1.4'):
+            if receipt['schema_version']=='multidoc-analysis/1.4':
+                from multidoc_v14 import validate_saved_receipt
+            elif receipt['schema_version']=='multidoc-analysis/1.3':
                 from multidoc_v13 import validate_saved_receipt
             else:
                 from multidoc_v12 import validate_saved_receipt

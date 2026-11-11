@@ -13,6 +13,8 @@ class Protocol13UI(IsolatedUITestCase):
   f=self.f
   app=AppTest.from_string("import streamlit as st\nfrom multidoc_ui import render_multidoc_ai\nrender_multidoc_ai(st.session_state['store'],st.session_state['cid'],st.session_state['settings'],st.session_state['principal'])",default_timeout=30)
   for key,value in {'store':f.store,'cid':f.cid,'settings':f.settings,'principal':f.settings.principal}.items():app.session_state[key]=value
+  # 固定1.3历史入口；新默认1.4由独立AppTest覆盖。
+  app.session_state['md_protocol']='1.3'
   app.run();app.multiselect(key='md_select_'+f.cid).set_value(list(f.ids.values())).run();return app
  def authorize(self,app):
   for did in self.f.batch['required_ack']:app.checkbox(key='md_ack_'+self.f.batch['batch_sha256']+'_'+did).check()

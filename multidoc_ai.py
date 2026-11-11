@@ -344,7 +344,9 @@ def analyze_case(store,cid,selected,settings,quota,principal,*,authorized_batch=
     disabled=settings.ai_disabled_reason(principal)
     if disabled:raise MultiAIError(disabled)
     if _pending_protocol:
-        if _pending_protocol=='1.3':
+        if _pending_protocol=='1.4':
+            import multidoc_v14 as pending
+        elif _pending_protocol=='1.3':
             import multidoc_v13 as pending
         else:
             import multidoc_v12 as pending
@@ -371,6 +373,8 @@ def analyze_case(store,cid,selected,settings,quota,principal,*,authorized_batch=
         receipt.update(schema_version=pending.SCHEMA_VERSION,prompt_version=pending.PROMPT_VERSION,
                        prompt_sha256=hashlib.sha256(pending.PROMPT.encode()).hexdigest(),
                        pending_catalog_version=pending.CATALOG_VERSION,pending_catalog_sha256=batch['pending_catalog']['sha256'])
+    if _pending_protocol=='1.4':
+        receipt.update(pending_alias_version=pending.ALIAS_VERSION,pending_alias_map_sha256=batch['alias_map']['sha256'])
     try:
         response=invoke(settings.api_key,request,settings.total_timeout,client_factory,provider=settings.provider)
         for key in ('call_status','provider_status','provider_model','provider_response_id','token_usage','http_status'):receipt[key]=response.get(key)
@@ -378,7 +382,7 @@ def analyze_case(store,cid,selected,settings,quota,principal,*,authorized_batch=
         if response.get('error_code'):receipt['error_code']=response['error_code']
         if response.get('error_code'):raise MultiAIError('模型服务未成功返回；不自动重试。',diagnostic=diagnostic('call','provider_call_failed',{},batch))
         if response.get('provider_status')!='completed' or response.get('refused'):raise MultiAIError('模型拒绝或输出不完整。',diagnostic=diagnostic('call','refused_or_incomplete',{},batch))
-        try:parsed=((pending.Analysis13 if _pending_protocol=='1.3' else pending.Analysis12) if _pending_protocol else CandidateAnalysis if _candidate_protocol else MultiAnalysis).model_validate_json(response.get('output_text',''))
+        try:parsed=((pending.Analysis14 if _pending_protocol=='1.4' else pending.Analysis13 if _pending_protocol=='1.3' else pending.Analysis12) if _pending_protocol else CandidateAnalysis if _candidate_protocol else MultiAnalysis).model_validate_json(response.get('output_text',''))
         except ValidationError as exc:
             raise MultiAIError(diagnostic=schema_diagnostic(exc,{'stage':'format'},batch,response.get('output_text',''))) from None
         receipt['format_status']='passed'
@@ -389,6 +393,8 @@ def analyze_case(store,cid,selected,settings,quota,principal,*,authorized_batch=
             raise MultiAIError(diagnostic=diagnostic('batch','candidate_catalog_changed',{},current))
         if _pending_protocol and current['pending_catalog']['sha256']!=receipt['pending_catalog_sha256']:
             raise MultiAIError(diagnostic=diagnostic('pending_catalog','pending_catalog_changed_during_call',{},current))
+        if _pending_protocol=='1.4' and current['alias_map']['sha256']!=receipt['pending_alias_map_sha256']:
+            raise MultiAIError(diagnostic=diagnostic('pending_alias_map','pending_alias_map_changed_during_call',{},current))
         receipt['evidence_status']='checking'
         result=(pending.validate_output if _pending_protocol else validate_candidate_output if _candidate_protocol else validate_case_output)(store,cid,current,parsed)
         if _candidate_protocol:
@@ -427,11 +433,15 @@ def import_case_analysis(store,cid,result):
     from security import Settings
     receipt=result.get('receipt',{})
     settings=Settings(provider=receipt.get('provider','openai'),model=receipt.get('requested_model',''))
+    if receipt.get('schema_version')!='multidoc-analysis/1.4' and any(k in receipt for k in ('pending_alias_version','pending_alias_map_sha256','pending_alias_selection')):
+        raise MultiAIError('历史回执含不匹配协议字段，未导入。')
     selected=result['selected_documents']
     versions={receipt.get('schema_version'),result.get('schema_version')}
-    is_pending=bool(versions & {'multidoc-analysis/1.2','multidoc-analysis/1.3'})
+    is_pending=bool(versions & {'multidoc-analysis/1.2','multidoc-analysis/1.3','multidoc-analysis/1.4'})
     if is_pending:
-        if 'multidoc-analysis/1.3' in versions:
+        if 'multidoc-analysis/1.4' in versions:
+            import multidoc_v14 as pending
+        elif 'multidoc-analysis/1.3' in versions:
             import multidoc_v13 as pending
         else:
             import multidoc_v12 as pending
@@ -493,7 +503,8 @@ def import_case_analysis(store,cid,result):
              'sdk_version','protocol','schema_version','prompt_version','prompt_sha256','batch_sha256','document_snapshots',
              'input_budget','started_at','call_status','provider_status','format_status','evidence_status','semantic_status',
              'token_usage','billing','duration_ms','candidate_version','candidate_catalog_sha256','candidate_selection_ids',
-             'pending_catalog_version','pending_catalog_sha256','pending_selection_ids','analysis_output_sha256')
+             'pending_catalog_version','pending_catalog_sha256','pending_selection_ids','analysis_output_sha256',
+             'pending_alias_version','pending_alias_map_sha256','pending_alias_selection')
     safe_receipt={key:deepcopy(receipt[key]) for key in allowed if key in receipt}
     if is_pending:safe_receipt['pending_statement_ids']=pending_statement_ids
     if safe_receipt and not any(r.get('run_id')==safe_receipt.get('run_id') for r in case.analysis_receipts):

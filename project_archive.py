@@ -4,6 +4,9 @@ import io
 import zipfile
 
 SOURCE_FILES = (
+    'multidoc_v14.py', 'pending_aliases.py', 'tools/prepare_v14_b01.py',
+    'tests/test_v14_aliases.py', 'tests/test_v14_ui.py',
+    'docs/V14_SHORT_ALIASES.md', 'docs/V14_B01_BUDGET.json', 'docs/v14_offline_tests.txt',
     'multidoc_v13.py', 'tools/prepare_v13_b01.py', 'tests/test_v13_catalog_ownership.py', 'tests/test_v13_ui.py',
     'docs/V13_CATALOG_OWNERSHIP.md', 'docs/V13_B01_BUDGET.json', 'docs/v13_offline_tests.txt',
     'tests/test_v2e_schema_diagnostics.py', 'docs/V2E_SCHEMA_DIAGNOSTICS.md', 'docs/v2e_schema_diagnostic_tests.txt',

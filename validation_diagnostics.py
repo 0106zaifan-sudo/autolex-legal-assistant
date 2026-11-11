@@ -58,7 +58,7 @@ _SCHEMA_REF={'source_id':{},'quote':{}}
 _SCHEMA_ITEM={'kind':{},'text':{},'reasoning':{},'sources':{'[]':_SCHEMA_REF}}
 _SCHEMA_TIMELINE={**_SCHEMA_ITEM,'event_source':_SCHEMA_REF,'time_source':_SCHEMA_REF,
  'time_state':{},'time_precision':{},'time_text':{},'candidate_id':{}}
-_SCHEMA_PENDING={**_SCHEMA_ITEM,'anchor_id':{},'evidence_ids':{'[]':{}}}
+_SCHEMA_PENDING={**_SCHEMA_ITEM,'anchor_id':{},'evidence_ids':{'[]':{}},'anchor_alias':{},'evidence_aliases':{'[]':{}}}
 _SCHEMA_PATHS={k:{} for k in ('schema_version','prompt_version','parser_version','document_sha256',
  'parsed_text_sha256','case_id','batch_sha256','pending_catalog_sha256')}
 _SCHEMA_PATHS.update(facts={'[]':_SCHEMA_ITEM},timeline={'[]':_SCHEMA_TIMELINE},
